@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌋 מסע סביב הים התיכון — משחק חזרה למבחן</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  button { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  body {
+    font-family: "Rubik", "Arial Hebrew", "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(180deg, #7ec8e3 0%, #4a9fd8 40%, #1e6fb8 100%);
+    min-height: 100vh;
+    color: #1a2b4a;
+    overflow-x: hidden;
+  }
+  .sun { position: fixed; top: 24px; left: 32px; width: 70px; height: 70px; border-radius: 50%;
+    background: radial-gradient(circle, #ffe680, #ffb830); box-shadow: 0 0 60px 20px rgba(255,210,80,.5);
+    animation: spin 40s linear infinite; z-index: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .wave { position: fixed; bottom: 0; left: 0; right: 0; height: 90px; z-index: 0; opacity: .5;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 90"><path d="M0,40 C150,90 350,0 600,40 C850,80 1050,0 1200,40 L1200,90 L0,90 Z" fill="%23ffffff" opacity="0.35"/></svg>') repeat-x bottom;
+    background-size: 1200px 90px; animation: waveMove 9s linear infinite; }
+  @keyframes waveMove { to { background-position-x: 1200px; } }
+
+  .container { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 20px 16px 120px; }
+
+  header { text-align: center; margin-bottom: 18px; }
+  header h1 { color: #fff; font-size: clamp(26px, 6vw, 40px); text-shadow: 0 3px 0 rgba(0,0,0,.18); }
+  header p { color: #eaf6ff; font-size: 17px; margin-top: 6px; }
+
+  .scorebar { display: flex; justify-content: center; gap: 10px; margin: 14px 0 20px; flex-wrap: wrap; }
+  .chip { background: #fff; border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 16px;
+    box-shadow: 0 3px 0 rgba(0,0,0,.12); display: flex; align-items: center; gap: 6px; }
+
+  .card { background: #fffdf5; border-radius: 22px; padding: 22px; box-shadow: 0 8px 0 rgba(0,0,0,.15);
+    margin-bottom: 16px; animation: pop .25s ease; }
+  @keyframes pop { from { transform: scale(.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .menu-btn { display: flex; align-items: center; gap: 14px; width: 100%; text-align: right;
+    background: #fff; border: 3px solid transparent; border-radius: 18px; padding: 16px 18px; margin-bottom: 12px;
+    font-family: inherit; font-size: 18px; font-weight: 700; color: #1a2b4a; cursor: pointer;
+    box-shadow: 0 5px 0 rgba(0,0,0,.14); transition: transform .12s, box-shadow .12s; }
+  .menu-btn:hover { transform: translateY(-2px); border-color: #ffb830; }
+  .menu-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.14); }
+  .menu-btn .emoji { font-size: 34px; }
+  .menu-btn small { display: block; font-weight: 400; color: #5b6b85; font-size: 14px; margin-top: 2px; }
+
+  .q-count { text-align: center; color: #5b6b85; font-weight: 700; margin-bottom: 10px; }
+  .question { font-size: 21px; font-weight: 800; text-align: center; margin-bottom: 18px; line-height: 1.45; }
+
+  .answers { display: grid; gap: 10px; }
+  .ans { background: #eef4ff; border: 3px solid #d7e3fa; border-radius: 14px; padding: 14px 16px;
+    font-family: inherit; font-size: 17px; font-weight: 600; color: #1a2b4a; cursor: pointer; text-align: right;
+    transition: transform .1s, background .15s, border-color .15s; }
+  .ans:hover { transform: scale(1.02); border-color: #7ea8f0; }
+  .ans.correct { background: #d3f8d8; border-color: #35c759; animation: bounce .4s; }
+  .ans.wrong { background: #ffd9d9; border-color: #ff5252; animation: shake .4s; }
+  .ans:disabled { cursor: default; opacity: .85; }
+  @keyframes bounce { 30% { transform: scale(1.06); } 60% { transform: scale(.98); } }
+  @keyframes shake { 20% { transform: translateX(6px); } 40% { transform: translateX(-6px); } 60% { transform: translateX(4px); } 80% { transform: translateX(-4px); } }
+
+  .feedback { text-align: center; font-size: 17px; font-weight: 700; min-height: 54px; margin-top: 14px; line-height: 1.4; }
+  .feedback .fact { display: block; font-weight: 400; font-size: 15px; color: #5b6b85; margin-top: 4px; }
+
+  .big-btn { display: block; width: 100%; background: linear-gradient(180deg, #ffc44d, #ff9f1c);
+    color: #5a3300; border: none; border-radius: 16px; padding: 15px; font-family: inherit;
+    font-size: 19px; font-weight: 800; cursor: pointer; box-shadow: 0 5px 0 #c97708; margin-top: 10px;
+    transition: transform .12s; }
+  .big-btn:hover { transform: translateY(-2px); }
+  .big-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #c97708; }
+  .big-btn.secondary { background: #e8eefb; color: #2b4a7a; box-shadow: 0 5px 0 #b8c6e4; }
+
+  .tf-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .tf-btn { border: none; border-radius: 16px; padding: 20px; font-family: inherit; font-size: 22px;
+    font-weight: 800; cursor: pointer; transition: transform .1s; box-shadow: 0 5px 0 rgba(0,0,0,.18); }
+  .tf-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,.18); }
+  .tf-true { background: #c9f3cf; color: #156b2a; }
+  .tf-false { background: #ffd4d4; color: #8f1d1d; }
+  .timerbar { height: 12px; background: #e3e9f5; border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
+  .timerbar > div { height: 100%; width: 100%; background: linear-gradient(90deg, #35c759, #ffc44d, #ff5252);
+    border-radius: 999px; transition: width .1s linear; }
+
+  .memory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 520px) { .memory-grid { grid-template-columns: repeat(3, 1fr); } }
+  .mem-card { aspect-ratio: 3/3.4; perspective: 600px; cursor: pointer; border: none; background: none; padding: 0; }
+  .mem-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .4s; }
+  .mem-card.flipped .mem-inner { transform: rotateY(180deg); }
+  .mem-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; text-align: center; padding: 6px;
+    font-family: inherit; font-weight: 700; }
+  .mem-back { background: linear-gradient(135deg, #2b6fc4, #15529e); color: #fff; font-size: 30px; }
+  .mem-front { background: #fff; border: 3px solid #ffb830; transform: rotateY(180deg);
+    font-size: 12.5px; line-height: 1.3; color: #1a2b4a; overflow: hidden; }
+  @media (max-width: 520px) {
+    .mem-front { font-size: 11.5px; padding: 4px; border-width: 2px; }
+    .sun { width: 44px; height: 44px; top: 12px; left: 12px; box-shadow: 0 0 36px 10px rgba(255,210,80,.4); }
+    header { padding: 0 56px; }
+    .container { padding-top: 14px; }
+  }
+  .mem-card.matched .mem-front { background: #d3f8d8; border-color: #35c759; }
+  .mem-card.term .mem-front { background: #fff3d6; }
+  .mem-card.matched.term .mem-front { background: #d3f8d8; }
+
+  .volcano-track { background: #fffdf5; border-radius: 22px; padding: 22px 18px 12px; margin-bottom: 14px;
+    box-shadow: 0 6px 0 rgba(0,0,0,.14); display: flex; align-items: center; gap: 10px; }
+  .volcano-track .side { font-size: 24px; }
+  .trail { position: relative; flex: 1; height: 14px; background: #e3e9f5; border-radius: 999px; }
+  .trail-fill { position: absolute; top: 0; right: 0; bottom: 0; width: 0; border-radius: 999px;
+    background: linear-gradient(270deg, #35c759, #ffc44d); transition: width .6s ease; }
+  .climber { position: absolute; top: -24px; right: 0; font-size: 24px; transition: right .6s ease;
+    transform: translateX(50%); }
+
+  body.playing header { display: none; }
+  body.playing .scorebar { margin-top: 40px; }
+
+  .result-card { text-align: center; }
+  .result-card .big-emoji { font-size: 72px; display: block; margin-bottom: 8px; animation: bounce .6s; }
+  .result-card h2 { font-size: 26px; margin-bottom: 8px; }
+  .result-card p { color: #5b6b85; font-size: 17px; margin-bottom: 14px; }
+  .stars { font-size: 36px; letter-spacing: 6px; margin-bottom: 10px; }
+
+  .confetti { position: fixed; top: -12px; z-index: 50; font-size: 22px; animation: fall linear forwards; pointer-events: none; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  .home-link { position: fixed; top: 12px; right: 12px; z-index: 10; background: #fff; border: none;
+    border-radius: 999px; padding: 10px 14px; font-family: inherit; font-weight: 800; font-size: 14px;
+    cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,.15); color: #1a2b4a; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="sun"></div>
+<div class="wave"></div>
+<button class="home-link hidden" id="homeBtn" onclick="goHome()">🏠 תפריט</button>
+
+<div class="container">
+  <header>
+    <h1>🌋 מסע סביב הים התיכון 🌊</h1>
+    <p>משחק חזרה למבחן בגאוגרפיה — בהצלחה!</p>
+  </header>
+
+  <div class="scorebar">
+    <div class="chip">⭐ ניקוד: <span id="totalScore">0</span></div>
+    <div class="chip">🔥 רצף: <span id="streak">0</span></div>
+  </div>
+
+  <!-- ===== MENU ===== -->
+  <div id="screen-menu">
+    <div class="card">
+      <button class="menu-btn" onclick="startQuiz()">
+        <span class="emoji">🧗</span>
+        <span>טיפוס על הר הגעש<small>חידון עם 4 תשובות — כל תשובה נכונה מטפסת למעלה!</small></span>
+      </button>
+      <button class="menu-btn" onclick="startTF()">
+        <span class="emoji">⚡</span>
+        <span>נכון או לא נכון?<small>סיבוב מהיר נגד השעון — תחשבו מהר!</small></span>
+      </button>
+      <button class="menu-btn" onclick="startMemory()">
+        <span class="emoji">🧠</span>
+        <span>זיכרון מילים<small>מצאו את הזוגות: מושג + הפירוש שלו</small></span>
+      </button>
+    </div>
+    <div class="card" style="text-align:center; font-size:15px; color:#5b6b85;">
+      💡 טיפ: שחקו בכל שלושת המשחקים כמה פעמים — ככה החומר נכנס לראש בלי להרגיש!
+    </div>
+  </div>
+
+  <!-- ===== QUIZ ===== -->
+  <div id="screen-quiz" class="hidden">
+    <div class="volcano-track">
+      <span class="side">🏕️</span>
+      <div class="trail">
+        <div class="trail-fill" id="trailFill"></div>
+        <span class="climber" id="climber">🧗</span>
+      </div>
+      <span class="side">🌋</span>
+    </div>
+    <div class="card">
+      <div class="q-count" id="quizCount"></div>
+      <div class="question" id="quizQ"></div>
+      <div class="answers" id="quizAnswers"></div>
+      <div class="feedback" id="quizFeedback"></div>
+      <button class="big-btn hidden" id="quizNext" onclick="nextQuizQ()">לשאלה הבאה ⬅️</button>
+    </div>
+  </div>
+
+  <!-- ===== TRUE/FALSE ===== -->
+  <div id="screen-tf" class="hidden">
+    <div class="card">
+      <div class="timerbar"><div id="tfTimer"></div></div>
+      <div class="q-count" id="tfCount"></div>
+      <div class="question" id="tfQ"></div>
+      <div class="tf-wrap">
+        <button class="tf-btn tf-true" onclick="answerTF(true)">✔️ נכון</button>
+        <button class="tf-btn tf-false" onclick="answerTF(false)">✖️ לא נכון</button>
+      </div>
+      <div class="feedback" id="tfFeedback"></div>
+    </div>
+  </div>
+
+  <!-- ===== MEMORY ===== -->
+  <div id="screen-memory" class="hidden">
+    <div class="card">
+      <div class="q-count" id="memCount">מצאו את כל הזוגות! 🟡 מושג + ⚪ פירוש</div>
+      <div class="memory-grid" id="memGrid"></div>
+    </div>
+  </div>
+
+  <!-- ===== RESULT ===== -->
+  <div id="screen-result" class="hidden">
+    <div class="card result-card">
+      <span class="big-emoji" id="resEmoji">🏆</span>
+      <div class="stars" id="resStars"></div>
+      <h2 id="resTitle"></h2>
+      <p id="resText"></p>
+      <button class="big-btn" id="resAgain"></button>
+      <button class="big-btn secondary" onclick="goHome()">🏠 חזרה לתפריט</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= DATA ================= */
+const QUIZ = [
+  { q: "איזה נהר גדול הוא היחיד שנשפך אל הים התיכון מדרום?", a: ["הנילוס", "הרון", "הפו", "הירדן"],
+    fact: "הנילוס מקבל את מימיו ממקורות מים רחוקים במרכז אפריקה — לא מהמדבר!" },
+  { q: "איך נראה קו החוף בחלקו הצפוני של הים התיכון?", a: ["מפורץ, עם מפרצים וחצאי איים", "ישר לגמרי", "מדברי וחולי", "בלי איים בכלל"],
+    fact: "בצפון החוף מפורץ ויש בו המון איים. בדרום ובמזרח — החוף ישר יותר." },
+  { q: "איפה נמצאים רוב האיים של הים התיכון?", a: ["בחלק הצפוני", "בחלק הדרומי", "בחלק המזרחי", "ליד מצרים"],
+    fact: "בים האגאי שבין יוון לטורקיה יש מאות איים — גדולים וקטנים!" },
+  { q: "איך קוראים לים שבין יוון לטורקיה שיש בו מאות איים?", a: ["הים האגאי", "הים האדום", "הים השחור", "ים סוף"],
+    fact: "יש בו כל כך הרבה איים, שכמעט מכל אי רואים את האי השכן." },
+  { q: "מהי הפסגה הגבוהה ביותר ברכס הרי האלפים?", a: ["המון בלאן — כ-4,800 מטר", "האטנה", "הר הגליל", "האולימפוס"],
+    fact: "המון בלאן מתנשא לגובה של כמעט 5 קילומטרים!" },
+  { q: "מהי רמה?", a: ["אזור גבוה ששטוח מלמעלה", "הר מחודד", "עמק עמוק", "חוף חולי"],
+    fact: "רמות אפשר למצוא בספרד, בצרפת, בטורקיה, בסוריה ובלוב." },
+  { q: "איזה מדבר ענק נמצא מדרום לים התיכון?", a: ["מדבר סהרה", "מדבר יהודה", "מדבר גובי", "הנגב"],
+    fact: "מישורי החוף בדרום נמשכים אל תוך מדבר הסהרה הענק שביבשת אפריקה." },
+  { q: "מהו נחל אכזב?", a: ["נחל שזורם רק אחרי גשם", "נחל שזורם כל השנה", "נחל מים חמים", "נחל מתחת לאדמה"],
+    fact: "נחל איתן לעומתו זורם כל ימות השנה — גם בקיץ!" },
+  { q: "מה זה שפך של נהר?", a: ["המקום שבו הנהר נשפך אל הים", "תחילת הנהר בהרים", "מפל מים", "אגם מלוח"],
+    fact: "באזור השפך הנהר מאט, וחומרי הסחף שהוא נושא שוקעים שם." },
+  { q: "למה קוראים לדלתה בשם הזה?", a: ["כי צורתה דומה לאות היוונית דלתא Δ", "על שם חוקרת בשם דלתה", "כי היא דלת לים", "כי היא עמוקה"],
+    fact: "הנהר מתפצל שם לזרועות, והשטח מקבל צורת משולש — בדיוק כמו Δ." },
+  { q: "ממה נוצרת הדלתה בשפך הנהר?", a: ["מחומרי סחף ששוקעים במקום שהנהר מאט", "מגלי הים", "מרוח חזקה", "מקרחונים"],
+    fact: "חומרי סחף הם חלקיקים קטנים של סלעים, חול וקרקע שהנהר נושא איתו." },
+  { q: "הדלתה המפורסמת ביותר בים התיכון היא של...", a: ["הנילוס", "הרון", "הפו", "האברו"],
+    fact: "דלתת הנילוס במצרים היא אזור חקלאי ענק ופורה." },
+  { q: "ממה נגרמות רעידות אדמה סביב הים התיכון?", a: ["מתנועה וחיכוך של לוחות קרום כדור הארץ", "מגלים גבוהים", "מרוחות חזקות", "מחום השמש"],
+    fact: "קרום כדור הארץ מורכב מלוחות ענקיים שנעים לאט-לאט כבר מיליוני שנים." },
+  { q: "מה עלול לקרות כשרעידת אדמה חזקה מתרחשת בקרקעית הים?", a: ["נוצרים גלי צונאמי ענקיים", "הים קופא", "נוצר אי חדש מיד", "יורד שלג"],
+    fact: "גלי הצונאמי מסנטוריני הגיעו עד כרתים והרסו את העיר כנוסוס!" },
+  { q: "מהי מגמה?", a: ["חומר סלעים מותך בעומק האדמה", "סוג של ענן", "אבן יקרה", "חול של חוף"],
+    fact: "כשהמגמה פורצת החוצה מהר געש — קוראים לה לבה." },
+  { q: "איך קוראים למגמה שזורמת על פני האדמה?", a: ["לבה", "סחף", "בזלת", "דלתה"],
+    fact: "הלבה זורמת כמו נהר לוהט ומתקררת לסלע." },
+  { q: "אילו שלושה הרי געש פעילים יש באיטליה?", a: ["סטרומבולי, אטנה וּוזוב", "אוורסט, מון בלאן וכרמל", "סיני, חרמון ותבור", "אולימפוס, אטנה ופוג'י"],
+    fact: "רוב הרי הגעש באזור כבר אינם פעילים — אבל שלושת אלה עדיין מתפרצים!" },
+  { q: "איפה נמצא הר הגעש אטנה?", a: ["באי סיציליה שבאיטליה", "ביוון", "בטורקיה", "בספרד"],
+    fact: "אטנה הוא מהרי הגעש הפעילים ביותר בעולם — ב-30 השנים האחרונות התפרץ 5 פעמים!" },
+  { q: "איזו עיר עתיקה נקברה בהתפרצות הר הגעש וזוב?", a: ["פומפיי", "אתונה", "רומא", "ליקיה"],
+    fact: "עד היום לומדים מפומפיי איך חיו האנשים בתקופה הרומית." },
+  { q: "מה מיוחד באי סנטוריני?", a: ["האי הוא בעצם הר געש", "זה האי הגדול בעולם", "אין בו בתים", "הוא מכוסה שלג"],
+    fact: "לפני כ-3,000 שנה הייתה בו התפרצות אדירה — החלק המרכזי של האי שקע בים!" },
+  { q: "מה קרה לערים העתיקות של ממלכת ליקיה שבטורקיה?", a: ["שקעו אל מתחת לפני הים בגלל רעידות אדמה", "נקברו בחול המדבר", "נשרפו בלבה", "הפכו לרמות"],
+    fact: "היום אפשר לשוט שם בספינה עם קרקעית שקופה ולראות את שרידי הערים מתחת למים!" },
+  { q: "איפה נמצאים רוב רכסי ההרים הגבוהים של אזור הים התיכון?", a: ["בחלקו הצפוני", "בחלקו הדרומי", "במרכז הים", "במצרים"],
+    fact: "האלפים, הפירנאים, האפנינים וההרים בטורקיה — כולם בצד הצפוני." },
+  { q: "למה בצד הדרומי של הים התיכון כמעט אין נהרות גדולים?", a: ["כי זה אזור מדברי ויבש", "כי קר שם מדי", "כי יש שם הרבה הרים", "כי הים בולע אותם"],
+    fact: "הצד הצפוני גשום — ולכן זורמים בו נהרות גדולים ועצומים." },
+  { q: "מה נוצר לאורך נהרות שזורמים במקומות צרים בין הרים?", a: ["עמקים צרים ועמוקים (קניונים)", "איים", "דיונות חול", "הרי געש"],
+    fact: "העמקים הצרים האלה הם אתרים מהממים לטיולים ולקיאקים!" },
+];
+
+const TF = [
+  { q: "רוב האיים של הים התיכון נמצאים בחלק הדרומי.", t: false, fact: "הפוך! רוב האיים נמצאים דווקא בחלק הצפוני." },
+  { q: "הנילוס הוא הנהר הגדול היחיד שנשפך לים התיכון מדרום.", t: true, fact: "כל שאר הנהרות הגדולים מגיעים מהצד הצפוני הגשום." },
+  { q: "לבה היא מגמה שהגיעה אל פני האדמה.", t: true, fact: "מתחת לאדמה — מגמה. בחוץ — לבה!" },
+  { q: "המון בלאן הוא הפסגה הגבוהה ביותר בהרי האלפים.", t: true, fact: "גובהו כ-4,800 מטר." },
+  { q: "הר הגעש אטנה נמצא ביוון.", t: false, fact: "אטנה נמצא באי סיציליה שבאיטליה." },
+  { q: "צונאמי נוצר בגלל רוח חזקה.", t: false, fact: "צונאמי נוצר מרעידת אדמה חזקה בקרקעית הים." },
+  { q: "נחל איתן זורם רק בחורף.", t: false, fact: "נחל איתן זורם כל השנה. נחל אכזב זורם רק אחרי גשם." },
+  { q: "הדלתה נקראת כך כי צורתה דומה לאות היוונית דלתא.", t: true, fact: "Δ — משולש, בדיוק כמו צורת הדלתה של הנהר." },
+  { q: "בחלק הצפוני של הים התיכון קו החוף ישר ומשעמם.", t: false, fact: "בצפון החוף מפורץ עם מפרצים, חצאי איים והמון איים." },
+  { q: "האי סנטוריני הוא בעצם הר געש.", t: true, fact: "לפני כ-3,000 שנה הוא התפרץ ומרכז האי שקע בים." },
+  { q: "מדבר סהרה נמצא מצפון לים התיכון.", t: false, fact: "הסהרה נמצא מדרום — באפריקה." },
+  { q: "רוב רכסי ההרים הגבוהים נמצאים בצפון הים התיכון.", t: true, fact: "האלפים, הפירנאים, האפנינים ועוד — כולם בצפון." },
+  { q: "חומרי סחף הם חלקיקים של סלעים, חול וקרקע שהנהר נושא.", t: true, fact: "כשהנהר מאט ליד השפך — הם שוקעים ונוצרת דלתה." },
+  { q: "העיר פומפיי נקברה בהתפרצות הר הגעש סטרומבולי.", t: false, fact: "פומפיי נקברה בהתפרצות של הר הגעש וזוב." },
+  { q: "ערים עתיקות בטורקיה שקעו מתחת למים בגלל רעידות אדמה.", t: true, fact: "אלה ערי ממלכת ליקיה — רואים אותן היום מסירות עם קרקעית שקופה." },
+  { q: "קרום כדור הארץ עשוי מלוחות ענקיים שנעים לאט.", t: true, fact: "החיכוך בין הלוחות גורם לרעידות אדמה." },
+  { q: "הים האגאי נמצא בין ספרד למרוקו.", t: false, fact: "הים האגאי נמצא בין יוון לטורקיה." },
+  { q: "רמה היא אזור גבוה ששטוח מלמעלה.", t: true, fact: "יש רמות בספרד, בטורקיה, בסוריה ובלוב." },
+];
+
+const PAIRS = [
+  { term: "שפך", def: "המקום שבו הנהר נפגש עם הים" },
+  { term: "דלתה", def: "שטח בצורת משולש שנוצר בשפך הנהר" },
+  { term: "מגמה", def: "סלע מותך בעומק האדמה" },
+  { term: "לבה", def: "מגמה שזורמת על פני האדמה" },
+  { term: "נחל אכזב", def: "זורם רק אחרי גשם" },
+  { term: "נחל איתן", def: "זורם כל ימות השנה" },
+  { term: "רמה", def: "אזור גבוה ושטוח" },
+  { term: "צונאמי", def: "גלים ענקיים מרעידת אדמה בים" },
+  { term: "חומרי סחף", def: "חול וסלעים קטנים שהנהר נושא" },
+  { term: "מפרץ", def: "קטע ים שנכנס אל תוך היבשה" },
+];
+
+/* ================= STATE ================= */
+let totalScore = 0, streak = 0;
+const $ = id => document.getElementById(id);
+const screens = ["menu","quiz","tf","memory","result"];
+function show(name) {
+  screens.forEach(s => $("screen-"+s).classList.toggle("hidden", s !== name));
+  $("homeBtn").classList.toggle("hidden", name === "menu");
+  document.body.classList.toggle("playing", name !== "menu");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function setTrail(pct) {
+  $("trailFill").style.width = (pct * 100) + "%";
+  $("climber").style.right = (pct * 100) + "%";
+}
+function goHome() { stopTFTimer(); show("menu"); }
+function addScore(n) {
+  totalScore += n;
+  $("totalScore").textContent = totalScore;
+}
+function setStreak(ok) {
+  streak = ok ? streak + 1 : 0;
+  $("streak").textContent = streak;
+}
+function shuffle(arr) { return [...arr].sort(() => Math.random() - .5); }
+function confetti(n = 30) {
+  const emojis = ["🎉","⭐","🌊","🌋","🏝️","✨","🐬"];
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement("div");
+    el.className = "confetti";
+    el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left = Math.random()*100 + "vw";
+    el.style.animationDuration = (2 + Math.random()*2) + "s";
+    el.style.animationDelay = Math.random()*0.5 + "s";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 5000);
+  }
+}
+
+/* sounds via WebAudio (no files needed) */
+let audioCtx;
+function beep(freq, dur = .15, type = "sine", gain = .15) {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.value = gain; g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  } catch (e) {}
+}
+const sndGood = () => { beep(660, .12); setTimeout(() => beep(880, .18), 110); };
+const sndBad = () => beep(180, .3, "sawtooth", .08);
+const sndWin = () => [523,659,784,1047].forEach((f,i) => setTimeout(() => beep(f,.2), i*160));
+
+/* ================= RESULT SCREEN ================= */
+function showResult({ correct, total, title, againFn, againLabel }) {
+  const ratio = correct / total;
+  $("resStars").textContent = ratio >= .9 ? "⭐⭐⭐" : ratio >= .6 ? "⭐⭐" : "⭐";
+  $("resEmoji").textContent = ratio >= .9 ? "🏆" : ratio >= .6 ? "🎉" : "💪";
+  $("resTitle").textContent = title;
+  $("resText").textContent = ratio >= .9 ? `וואו! ${correct} מתוך ${total} — אתם מוכנים למבחן!`
+    : ratio >= .6 ? `יפה מאוד! ${correct} מתוך ${total}. עוד סיבוב ותהיו אלופים!`
+    : `${correct} מתוך ${total} — התחלה טובה! שחקו שוב וזה ייכנס לראש.`;
+  const btn = $("resAgain");
+  btn.textContent = againLabel;
+  btn.onclick = againFn;
+  show("result");
+  if (ratio >= .6) { confetti(ratio >= .9 ? 50 : 25); sndWin(); }
+}
+
+/* ================= QUIZ ================= */
+let quizQs = [], quizIdx = 0, quizCorrect = 0;
+const QUIZ_LEN = 10;
+function startQuiz() {
+  quizQs = shuffle(QUIZ).slice(0, QUIZ_LEN);
+  quizIdx = 0; quizCorrect = 0;
+  show("quiz");
+  renderQuizQ();
+}
+function renderQuizQ() {
+  const item = quizQs[quizIdx];
+  $("quizCount").textContent = `שאלה ${quizIdx+1} מתוך ${quizQs.length}`;
+  $("quizQ").textContent = item.q;
+  $("quizFeedback").textContent = "";
+  $("quizNext").classList.add("hidden");
+  const correct = item.a[0];
+  const opts = shuffle(item.a);
+  $("quizAnswers").innerHTML = "";
+  opts.forEach(opt => {
+    const b = document.createElement("button");
+    b.className = "ans";
+    b.textContent = opt;
+    b.onclick = () => answerQuiz(b, opt === correct, correct, item.fact);
+    $("quizAnswers").appendChild(b);
+  });
+  setTrail(quizIdx / quizQs.length);
+}
+function answerQuiz(btn, ok, correct, fact) {
+  [...$("quizAnswers").children].forEach(b => {
+    b.disabled = true;
+    if (b.textContent === correct) b.classList.add("correct");
+  });
+  if (ok) {
+    quizCorrect++; addScore(10 + Math.min(streak, 5) * 2); setStreak(true); sndGood();
+    $("quizFeedback").innerHTML = `✅ מעולה!<span class="fact">${fact}</span>`;
+  } else {
+    btn.classList.add("wrong"); setStreak(false); sndBad();
+    $("quizFeedback").innerHTML = `❌ לא נורא! התשובה: <b>${correct}</b><span class="fact">${fact}</span>`;
+  }
+  $("quizNext").classList.remove("hidden");
+}
+function nextQuizQ() {
+  quizIdx++;
+  if (quizIdx < quizQs.length) { renderQuizQ(); return; }
+  setTrail(1);
+  showResult({ correct: quizCorrect, total: quizQs.length,
+    title: quizCorrect === quizQs.length ? "כבשתם את הר הגעש!" : "סיימתם את הטיפוס!",
+    againFn: startQuiz, againLabel: "🧗 לטפס שוב" });
+}
+
+/* ================= TRUE / FALSE ================= */
+let tfQs = [], tfIdx = 0, tfCorrect = 0, tfTimerId = null, tfTimeLeft = 0, tfLocked = false;
+const TF_LEN = 10, TF_SECONDS = 10;
+function startTF() {
+  tfQs = shuffle(TF).slice(0, TF_LEN);
+  tfIdx = 0; tfCorrect = 0;
+  show("tf");
+  renderTFQ();
+}
+function renderTFQ() {
+  tfLocked = false;
+  const item = tfQs[tfIdx];
+  $("tfCount").textContent = `שאלה ${tfIdx+1} מתוך ${tfQs.length}`;
+  $("tfQ").textContent = item.q;
+  $("tfFeedback").textContent = "";
+  tfTimeLeft = TF_SECONDS * 10;
+  stopTFTimer();
+  tfTimerId = setInterval(() => {
+    tfTimeLeft--;
+    $("tfTimer").style.width = (tfTimeLeft / (TF_SECONDS*10) * 100) + "%";
+    if (tfTimeLeft <= 0) { answerTF(null); }
+  }, 100);
+}
+function stopTFTimer() { if (tfTimerId) { clearInterval(tfTimerId); tfTimerId = null; } }
+function answerTF(val) {
+  if (tfLocked) return;
+  tfLocked = true;
+  stopTFTimer();
+  const item = tfQs[tfIdx];
+  const ok = val === item.t;
+  if (ok) {
+    tfCorrect++; addScore(10 + Math.ceil(tfTimeLeft/10)); setStreak(true); sndGood();
+    $("tfFeedback").innerHTML = `✅ בול!<span class="fact">${item.fact}</span>`;
+  } else {
+    setStreak(false); sndBad();
+    const headline = val === null ? "⏰ נגמר הזמן!" : "❌ אופס!";
+    $("tfFeedback").innerHTML = `${headline} התשובה: <b>${item.t ? "נכון" : "לא נכון"}</b><span class="fact">${item.fact}</span>`;
+  }
+  setTimeout(() => {
+    tfIdx++;
+    if (tfIdx < tfQs.length) renderTFQ();
+    else showResult({ correct: tfCorrect, total: tfQs.length, title: "סיבוב הברקים הסתיים!",
+      againFn: startTF, againLabel: "⚡ עוד סיבוב מהיר" });
+  }, 2200);
+}
+
+/* ================= MEMORY ================= */
+let memFirst = null, memLock = false, memMatched = 0, memPairs = [];
+const MEM_PAIRS = 6;
+function startMemory() {
+  memPairs = shuffle(PAIRS).slice(0, MEM_PAIRS);
+  memFirst = null; memLock = false; memMatched = 0;
+  const cards = shuffle(memPairs.flatMap((p, i) => [
+    { id: i, text: p.term, kind: "term" },
+    { id: i, text: p.def, kind: "def" },
+  ]));
+  const grid = $("memGrid");
+  grid.innerHTML = "";
+  cards.forEach(c => {
+    const b = document.createElement("button");
+    b.className = "mem-card" + (c.kind === "term" ? " term" : "");
+    b.dataset.id = c.id;
+    b.innerHTML = `<div class="mem-inner">
+      <div class="mem-face mem-back">${c.kind === "term" ? "🟡" : "🌊"}</div>
+      <div class="mem-face mem-front">${c.text}</div>
+    </div>`;
+    b.onclick = () => flipMem(b);
+    grid.appendChild(b);
+  });
+  show("memory");
+}
+function flipMem(card) {
+  if (memLock || card.classList.contains("flipped")) return;
+  card.classList.add("flipped");
+  beep(500, .08, "sine", .08);
+  if (!memFirst) { memFirst = card; return; }
+  const a = memFirst, b = card;
+  memFirst = null;
+  if (a.dataset.id === b.dataset.id) {
+    a.classList.add("matched"); b.classList.add("matched");
+    memMatched++; addScore(15); setStreak(true); sndGood();
+    if (memMatched === memPairs.length) {
+      setTimeout(() => showResult({ correct: memPairs.length, total: memPairs.length,
+        title: "זיכרון של אלופים!", againFn: startMemory, againLabel: "🧠 לשחק שוב" }), 600);
+    }
+  } else {
+    memLock = true; setStreak(false);
+    setTimeout(() => {
+      a.classList.remove("flipped"); b.classList.remove("flipped");
+      memLock = false;
+    }, 900);
+  }
+}
+</script>
+</body>
+</html>
