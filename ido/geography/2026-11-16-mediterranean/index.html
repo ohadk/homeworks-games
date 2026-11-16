@@ -120,6 +120,17 @@
   .result-card p { color: #5b6b85; font-size: 17px; margin-bottom: 14px; }
   .stars { font-size: 36px; letter-spacing: 6px; margin-bottom: 10px; }
 
+  .cov-title { font-weight: 800; font-size: 17px; text-align: center; margin-bottom: 12px; }
+  .cov-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 14px; font-weight: 700; }
+  .cov-row .lbl { width: 112px; }
+  .cov-bar { flex: 1; height: 12px; background: #e3e9f5; border-radius: 999px; overflow: hidden; }
+  .cov-bar > div { height: 100%; background: linear-gradient(90deg, #35c759, #9be15d); border-radius: 999px; width: 0; transition: width .5s; }
+  .cov-pct { width: 56px; text-align: left; color: #5b6b85; }
+  .cov-total { text-align: center; margin-top: 6px; font-size: 15px; font-weight: 800; color: #156b2a; }
+  .reset-link { display: block; margin: 10px auto 0; background: none; border: none; color: #9aa7bd;
+    font-family: inherit; font-size: 13px; cursor: pointer; text-decoration: underline; }
+  .version-tag { text-align: center; color: #dceeff; font-size: 13px; margin-top: 12px; text-shadow: 0 1px 0 rgba(0,0,0,.15); }
+
   .confetti { position: fixed; top: -12px; z-index: 50; font-size: 22px; animation: fall linear forwards; pointer-events: none; }
   @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
 
@@ -161,9 +172,18 @@
         <span>זיכרון מילים<small>מצאו את הזוגות: מושג + הפירוש שלו</small></span>
       </button>
     </div>
-    <div class="card" style="text-align:center; font-size:15px; color:#5b6b85;">
-      💡 טיפ: שחקו בכל שלושת המשחקים כמה פעמים — ככה החומר נכנס לראש בלי להרגיש!
+    <div class="card">
+      <div class="cov-title">📚 כמה מהחומר כבר כיסית?</div>
+      <div class="cov-row"><span class="lbl">🧗 חידון</span><div class="cov-bar"><div id="covQ"></div></div><span class="cov-pct" id="covQt"></span></div>
+      <div class="cov-row"><span class="lbl">⚡ נכון/לא נכון</span><div class="cov-bar"><div id="covT"></div></div><span class="cov-pct" id="covTt"></span></div>
+      <div class="cov-row"><span class="lbl">🧠 זוגות</span><div class="cov-bar"><div id="covP"></div></div><span class="cov-pct" id="covPt"></span></div>
+      <div class="cov-total" id="covTotal"></div>
+      <button class="reset-link" onclick="resetProgress()">איפוס התקדמות</button>
     </div>
+    <div class="card" style="text-align:center; font-size:15px; color:#5b6b85;">
+      💡 טיפ: כל סיבוב מביא קודם שאלות שעוד לא ענית עליהן נכון — שחקו עד שהפסים מתמלאים!
+    </div>
+    <div class="version-tag" id="versionTag"></div>
   </div>
 
   <!-- ===== QUIZ ===== -->
@@ -444,8 +464,46 @@ const PAIRS = [
 ];
 
 /* ================= STATE ================= */
-let totalScore = 0, streak = 0;
+const VERSION = "גרסה 4 · עודכן 16.11.2026";
+const store = (() => { try { return JSON.parse(localStorage.getItem("geoGameProgress") || "{}"); } catch (e) { return {}; } })();
+store.quiz = store.quiz || {}; store.tf = store.tf || {}; store.pairs = store.pairs || {}; store.score = store.score || 0;
+function saveStore() { try { localStorage.setItem("geoGameProgress", JSON.stringify(store)); } catch (e) {} }
+function markCovered(kind, key) { store[kind][key] = 1; saveStore(); renderCoverage(); }
+
+let totalScore = store.score, streak = 0;
 const $ = id => document.getElementById(id);
+
+function covCount(kind, pool, keyFn) { return pool.filter(x => store[kind][keyFn(x)]).length; }
+function renderCoverage() {
+  const sets = [
+    ["quiz", QUIZ, x => x.q, "covQ", "covQt"],
+    ["tf", TF, x => x.q, "covT", "covTt"],
+    ["pairs", PAIRS, x => x.term, "covP", "covPt"],
+  ];
+  let done = 0, total = 0;
+  sets.forEach(([kind, pool, keyFn, barId, txtId]) => {
+    const c = covCount(kind, pool, keyFn);
+    done += c; total += pool.length;
+    $(barId).style.width = (c / pool.length * 100) + "%";
+    $(txtId).textContent = c + "/" + pool.length;
+  });
+  $("covTotal").textContent = done === total
+    ? "🏆 כיסית את כל החומר! אלוף/ה!"
+    : "סה\"כ: " + Math.round(done / total * 100) + "% מהחומר";
+  $("versionTag").textContent = VERSION + " · " + QUIZ.length + " שאלות, " + TF.length + " נכון/לא נכון, " + PAIRS.length + " זוגות";
+}
+function resetProgress() {
+  if (!confirm("לאפס את כל ההתקדמות והניקוד?")) return;
+  store.quiz = {}; store.tf = {}; store.pairs = {}; store.score = 0;
+  totalScore = 0; streak = 0;
+  $("totalScore").textContent = 0; $("streak").textContent = 0;
+  saveStore(); renderCoverage();
+}
+function samplePreferUncovered(pool, keyFn, covered, n) {
+  const fresh = shuffle(pool.filter(x => !covered[keyFn(x)]));
+  const seen = shuffle(pool.filter(x => covered[keyFn(x)]));
+  return fresh.concat(seen).slice(0, n);
+}
 const screens = ["menu","quiz","tf","memory","result"];
 function show(name) {
   screens.forEach(s => $("screen-"+s).classList.toggle("hidden", s !== name));
@@ -461,6 +519,8 @@ function goHome() { stopTFTimer(); show("menu"); }
 function addScore(n) {
   totalScore += n;
   $("totalScore").textContent = totalScore;
+  store.score = totalScore;
+  saveStore();
 }
 function setStreak(ok) {
   streak = ok ? streak + 1 : 0;
@@ -517,7 +577,7 @@ function showResult({ correct, total, title, againFn, againLabel }) {
 let quizQs = [], quizIdx = 0, quizCorrect = 0;
 const QUIZ_LEN = 10;
 function startQuiz() {
-  quizQs = shuffle(QUIZ).slice(0, QUIZ_LEN);
+  quizQs = samplePreferUncovered(QUIZ, x => x.q, store.quiz, QUIZ_LEN);
   quizIdx = 0; quizCorrect = 0;
   show("quiz");
   renderQuizQ();
@@ -547,6 +607,7 @@ function answerQuiz(btn, ok, correct, fact) {
   });
   if (ok) {
     quizCorrect++; addScore(10 + Math.min(streak, 5) * 2); setStreak(true); sndGood();
+    markCovered("quiz", quizQs[quizIdx].q);
     $("quizFeedback").innerHTML = `✅ מעולה!<span class="fact">${fact}</span>`;
   } else {
     btn.classList.add("wrong"); setStreak(false); sndBad();
@@ -567,7 +628,7 @@ function nextQuizQ() {
 let tfQs = [], tfIdx = 0, tfCorrect = 0, tfTimerId = null, tfTimeLeft = 0, tfLocked = false;
 const TF_LEN = 10, TF_SECONDS = 10;
 function startTF() {
-  tfQs = shuffle(TF).slice(0, TF_LEN);
+  tfQs = samplePreferUncovered(TF, x => x.q, store.tf, TF_LEN);
   tfIdx = 0; tfCorrect = 0;
   show("tf");
   renderTFQ();
@@ -595,6 +656,7 @@ function answerTF(val) {
   const ok = val === item.t;
   if (ok) {
     tfCorrect++; addScore(10 + Math.ceil(tfTimeLeft/10)); setStreak(true); sndGood();
+    markCovered("tf", item.q);
     $("tfFeedback").innerHTML = `✅ בול!<span class="fact">${item.fact}</span>`;
   } else {
     setStreak(false); sndBad();
@@ -613,7 +675,7 @@ function answerTF(val) {
 let memFirst = null, memLock = false, memMatched = 0, memPairs = [];
 const MEM_PAIRS = 8;
 function startMemory() {
-  memPairs = shuffle(PAIRS).slice(0, MEM_PAIRS);
+  memPairs = samplePreferUncovered(PAIRS, p => p.term, store.pairs, MEM_PAIRS);
   memFirst = null; memLock = false; memMatched = 0;
   const cards = shuffle(memPairs.flatMap((p, i) => [
     { id: i, text: p.term, kind: "term" },
@@ -644,6 +706,7 @@ function flipMem(card) {
   if (a.dataset.id === b.dataset.id) {
     a.classList.add("matched"); b.classList.add("matched");
     memMatched++; addScore(15); setStreak(true); sndGood();
+    markCovered("pairs", memPairs[a.dataset.id].term);
     if (memMatched === memPairs.length) {
       setTimeout(() => showResult({ correct: memPairs.length, total: memPairs.length,
         title: "זיכרון של אלופים!", againFn: startMemory, againLabel: "🧠 לשחק שוב" }), 600);
@@ -656,6 +719,9 @@ function flipMem(card) {
     }, 900);
   }
 }
+
+$("totalScore").textContent = totalScore;
+renderCoverage();
 </script>
 </body>
 </html>
