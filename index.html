@@ -46,6 +46,8 @@
   .badge { display: inline-block; background: rgba(0,0,0,.25); border-radius: 999px; padding: 4px 12px;
     font-size: 13px; font-weight: 700; margin-top: 8px; }
 
+  .my-status { display: inline-block; background: rgba(255,255,255,.92); color: #1a2b4a; border-radius: 999px;
+    padding: 6px 14px; font-size: 14px; font-weight: 800; margin-top: 10px; box-shadow: 0 3px 0 rgba(0,0,0,.15); }
   .footer-note { text-align: center; color: #c9c2ef; font-size: 13px; margin-top: 26px; }
 </style>
 </head>
@@ -63,12 +65,12 @@
 const GAMES = [
   {
     subject: "גאוגרפיה", icon: "🌋", title: "הים התיכון",
-    exam: "2026-11-17", link: "ido/geography/2026-11-16-mediterranean/",
+    exam: "2026-11-17", link: "ido/geography/2026-11-16-mediterranean/", storeKey: "geoGameProgress",
     grad: "linear-gradient(135deg, #36a3dd, #155a9e)", floaties: ["🌊","🌋","🏝️","⛵"],
   },
   {
     subject: "תנ\"ך", icon: "📜", title: "ויקרא ובמדבר",
-    exam: "2026-11-27", link: "ido/tanach/2026-11-27-vayikra-bamidbar/",
+    exam: "2026-11-27", link: "ido/tanach/2026-11-27-vayikra-bamidbar/", storeKey: "tanachGameProgress",
     grad: "linear-gradient(135deg, #c99a4b, #8a5f22)", floaties: ["📜","🕊️","⛺","🌾"],
   },
 ];
@@ -86,6 +88,18 @@ function floatiesHtml(g) {
   return '<span class="floaties">' + g.floaties.map((e,i) =>
     `<span style="right:${pos[i][0]};top:${pos[i][1]};animation-delay:${i*0.7}s">${e}</span>`).join("") + "</span>";
 }
+function myStatus(g) {
+  let st = {};
+  try { st = JSON.parse(localStorage.getItem(g.storeKey) || "{}"); } catch (e) {}
+  const parts = [];
+  if (st.summary && st.summary.total) {
+    const pct = Math.round(st.summary.done / st.summary.total * 100);
+    parts.push(pct === 100 ? "🏆 כיסית את כל החומר" : pct > 0 ? "📊 כיסית " + pct + "% מהחומר" : "");
+  }
+  if (st.examBest != null) parts.push("🎓 ציון במבחן המסכם: " + (st.examLast != null ? st.examLast : st.examBest));
+  const text = parts.filter(Boolean).join(" · ");
+  return text ? `<div class="my-status">${text}</div>` : "";
+}
 function upcomingCard(g) {
   const d = daysUntil(g);
   const when = d === 0 ? "המבחן היום — בהצלחה! 🍀" : d === 1 ? "המבחן מחר!" : "";
@@ -97,6 +111,7 @@ function upcomingCard(g) {
     <div class="subject">${g.icon} ${g.subject}</div>
     <div class="game-title">${g.title}</div>
     <div class="exam-line">📅 המבחן ב${fmtDate(g)} ${when ? "· " + when : ""}</div>
+    ${myStatus(g)}
     <div class="count-row">${bubble}<div class="cta">יאללה לתרגל! ⬅️</div></div>
   </a>`;
 }
@@ -107,6 +122,7 @@ function pastCard(g) {
     <div class="subject">${g.icon} ${g.subject}</div>
     <div class="game-title">${g.title}</div>
     <div class="exam-line">✅ המבחן היה ב${fmtDate(g)}</div>
+    ${myStatus(g)}
     <div class="badge">עבר לפני ${d === 1 ? "יום" : d + " ימים"} · עדיין כיף לתרגל 😎</div>
   </a>`;
 }

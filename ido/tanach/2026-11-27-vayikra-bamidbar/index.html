@@ -206,6 +206,7 @@
       <div class="cov-row"><span class="lbl">⚡ נכון/לא נכון</span><div class="cov-bar"><div id="covT"></div></div><span class="cov-pct" id="covTt"></span></div>
       <div class="cov-row"><span class="lbl">📜 זוגות</span><div class="cov-bar"><div id="covP"></div></div><span class="cov-pct" id="covPt"></span></div>
       <div class="cov-total" id="covTotal"></div>
+      <div class="cov-total hidden" id="examLine" style="color:#8a5a00"></div>
       <button class="reset-link" onclick="resetProgress()">איפוס התקדמות</button>
     </div>
     <div class="card" style="text-align:center; font-size:15px; color:#7d6243;">
@@ -425,7 +426,7 @@ const THEME = {"party": ["📜", "🕊️", "🌾", "📯", "⭐", "🍇", "☁�
   .forEach(([pool, topics]) => { if (pool.length !== topics.length) throw new Error('topic map length mismatch'); pool.forEach((x, i) => x.topic = topics[i]); });
 
 /* ================= STATE ================= */
-const VERSION = "גרסה 2 · עודכן 23.11.2026";
+const VERSION = "גרסה 3 · עודכן 23.11.2026";
 const store = (() => { try { return JSON.parse(localStorage.getItem("tanachGameProgress") || "{}"); } catch (e) { return {}; } })();
 store.quiz = store.quiz || {}; store.tf = store.tf || {}; store.pairs = store.pairs || {}; store.score = store.score || 0;
 function saveStore() { try { localStorage.setItem("tanachGameProgress", JSON.stringify(store)); } catch (e) {} }
@@ -456,6 +457,15 @@ function renderCoverage() {
   $("covTotal").textContent = done === total
     ? "🏆 כיסית את כל החומר! אלוף/ה!"
     : "סה\"כ: " + Math.round(done / total * 100) + "% מהחומר";
+  store.summary = { done, total };
+  saveStore();
+  const hasExam = store.examBest != null;
+  $("examLine").classList.toggle("hidden", !hasExam);
+  if (hasExam) {
+    const last = store.examLast != null ? store.examLast : store.examBest;
+    $("examLine").textContent = "🎓 ציון במבחן המסכם: " + last +
+      (store.examCount > 1 ? " · שיא: " + store.examBest + " · " + store.examCount + " ניסיונות" : "");
+  }
   renderMenuState();
   $("versionTag").textContent = VERSION + " · " + QUIZ.length + " שאלות, " + TF.length + " נכון/לא נכון, " + PAIRS.length + " זוגות";
 }
@@ -463,6 +473,7 @@ function resetProgress() {
   if (!confirm("לאפס את כל ההתקדמות והניקוד?")) return;
   store.quiz = {}; store.tf = {}; store.pairs = {}; store.score = 0;
   delete store.celebrated; delete store.pendingParty; delete store.examBest;
+  delete store.examLast; delete store.examCount; delete store.examDate; delete store.examHistory;
   totalScore = 0; streak = 0;
   $("totalScore").textContent = 0; $("streak").textContent = 0;
   saveStore(); renderCoverage();
@@ -802,6 +813,10 @@ function finishExam() {
   const wrong = exQs.map((x, i) => ({ ...x, mine: exAnswers[i] })).filter(x => x.mine !== x.correct);
   const grade = Math.round((exQs.length - wrong.length) / exQs.length * 100);
   store.examBest = Math.max(store.examBest || 0, grade);
+  store.examLast = grade;
+  store.examCount = (store.examCount || 0) + 1;
+  store.examDate = new Date().toISOString();
+  store.examHistory = (store.examHistory || []).concat([{ grade, date: store.examDate }]).slice(-20);
   saveStore(); renderCoverage();
   $("exEmoji").textContent = grade >= 90 ? "🏆" : grade >= 75 ? "🎉" : grade >= 55 ? "💪" : "📚";
   $("exGrade").textContent = grade;
