@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎓 התרגולים של עידו</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: "Rubik", "Arial Hebrew", "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(180deg, #2b2d6e 0%, #4b3f9e 45%, #7b5fc0 100%);
+    min-height: 100vh; color: #1a2b4a; overflow-x: hidden;
+  }
+  .star { position: fixed; color: #fff; opacity: .7; animation: twinkle 3s ease-in-out infinite; z-index: 0; }
+  @keyframes twinkle { 50% { opacity: .15; transform: scale(.8); } }
+
+  .container { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 26px 16px 60px; }
+  header { text-align: center; margin-bottom: 24px; }
+  header h1 { color: #fff; font-size: clamp(28px, 7vw, 42px); text-shadow: 0 3px 0 rgba(0,0,0,.25); }
+  header p { color: #d9d4f7; font-size: 17px; margin-top: 6px; }
+
+  .section-title { color: #fff; font-size: 20px; font-weight: 800; margin: 22px 4px 12px;
+    text-shadow: 0 2px 0 rgba(0,0,0,.2); }
+
+  .game-card { position: relative; display: block; text-decoration: none; border-radius: 24px;
+    padding: 22px; margin-bottom: 16px; overflow: hidden; color: #fff;
+    box-shadow: 0 8px 0 rgba(0,0,0,.25); transition: transform .15s; }
+  .game-card:hover { transform: translateY(-3px) scale(1.01); }
+  .game-card:active { transform: translateY(2px); }
+  .game-card .floaties span { position: absolute; font-size: 30px; opacity: .35; animation: floaty 5s ease-in-out infinite; }
+  @keyframes floaty { 50% { transform: translateY(-12px) rotate(8deg); } }
+  .subject { font-size: 15px; font-weight: 700; opacity: .9; letter-spacing: .5px; }
+  .game-title { font-size: clamp(22px, 5.5vw, 30px); font-weight: 800; margin: 4px 0 10px; text-shadow: 0 2px 0 rgba(0,0,0,.2); }
+  .exam-line { font-size: 15px; font-weight: 600; opacity: .95; }
+
+  .count-row { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
+  .count-bubble { background: rgba(255,255,255,.92); color: #1a2b4a; border-radius: 18px;
+    padding: 10px 18px; text-align: center; box-shadow: 0 4px 0 rgba(0,0,0,.18); }
+  .count-bubble .num { font-size: 30px; font-weight: 800; line-height: 1; }
+  .count-bubble .lbl { font-size: 12.5px; font-weight: 700; color: #5b6b85; }
+  .cta { margin-right: auto; background: rgba(255,255,255,.95); color: #1a2b4a; font-weight: 800;
+    font-size: 16px; border-radius: 999px; padding: 12px 20px; box-shadow: 0 4px 0 rgba(0,0,0,.18); }
+
+  .past .game-title { font-size: 20px; }
+  .past { opacity: .93; padding: 16px 22px; }
+  .badge { display: inline-block; background: rgba(0,0,0,.25); border-radius: 999px; padding: 4px 12px;
+    font-size: 13px; font-weight: 700; margin-top: 8px; }
+
+  .footer-note { text-align: center; color: #c9c2ef; font-size: 13px; margin-top: 26px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🎓 התרגולים של עידו</h1>
+    <p>כל החזרות למבחנים — במקום אחד!</p>
+  </header>
+  <div id="content"></div>
+  <div class="footer-note" id="footerNote"></div>
+</div>
+
+<script>
+const GAMES = [
+  {
+    subject: "גאוגרפיה", icon: "🌋", title: "הים התיכון",
+    exam: "2026-11-17", link: "ido/geography/2026-11-16-mediterranean/",
+    grad: "linear-gradient(135deg, #36a3dd, #155a9e)", floaties: ["🌊","🌋","🏝️","⛵"],
+  },
+  {
+    subject: "תנ\"ך", icon: "📜", title: "ויקרא ובמדבר",
+    exam: "2026-11-27", link: "ido/tanach/2026-11-27-vayikra-bamidbar/",
+    grad: "linear-gradient(135deg, #c99a4b, #8a5f22)", floaties: ["📜","🕊️","⛺","🌾"],
+  },
+];
+
+const today = new Date(); today.setHours(0,0,0,0);
+function examDate(g) { const d = new Date(g.exam + "T00:00:00"); return d; }
+function daysUntil(g) { return Math.round((examDate(g) - today) / 86400000); }
+function fmtDate(g) {
+  const d = examDate(g);
+  return d.toLocaleDateString("he-IL", { weekday: "long" }) + ", " +
+    d.getDate() + "." + (d.getMonth()+1) + "." + d.getFullYear();
+}
+function floatiesHtml(g) {
+  const pos = [["6%","10%"],["82%","16%"],["38%","12%"],["60%","40%"]];
+  return '<span class="floaties">' + g.floaties.map((e,i) =>
+    `<span style="right:${pos[i][0]};top:${pos[i][1]};animation-delay:${i*0.7}s">${e}</span>`).join("") + "</span>";
+}
+function upcomingCard(g) {
+  const d = daysUntil(g);
+  const when = d === 0 ? "המבחן היום — בהצלחה! 🍀" : d === 1 ? "המבחן מחר!" : "";
+  const bubble = d > 1
+    ? `<div class="count-bubble"><div class="num">${d}</div><div class="lbl">ימים למבחן</div></div>`
+    : `<div class="count-bubble"><div class="num">${d === 1 ? "מחר" : "היום"}</div><div class="lbl">המבחן!</div></div>`;
+  return `<a class="game-card" href="${g.link}" style="background:${g.grad}">
+    ${floatiesHtml(g)}
+    <div class="subject">${g.icon} ${g.subject}</div>
+    <div class="game-title">${g.title}</div>
+    <div class="exam-line">📅 המבחן ב${fmtDate(g)} ${when ? "· " + when : ""}</div>
+    <div class="count-row">${bubble}<div class="cta">יאללה לתרגל! ⬅️</div></div>
+  </a>`;
+}
+function pastCard(g) {
+  const d = -daysUntil(g);
+  return `<a class="game-card past" href="${g.link}" style="background:${g.grad}">
+    ${floatiesHtml(g)}
+    <div class="subject">${g.icon} ${g.subject}</div>
+    <div class="game-title">${g.title}</div>
+    <div class="exam-line">✅ המבחן היה ב${fmtDate(g)}</div>
+    <div class="badge">עבר לפני ${d === 1 ? "יום" : d + " ימים"} · עדיין כיף לתרגל 😎</div>
+  </a>`;
+}
+const upcoming = GAMES.filter(g => daysUntil(g) >= 0).sort((a,b) => daysUntil(a) - daysUntil(b));
+const past = GAMES.filter(g => daysUntil(g) < 0).sort((a,b) => daysUntil(b) - daysUntil(a));
+let html = "";
+if (upcoming.length) html += `<div class="section-title">🎯 המבחן הבא</div>` + upcoming.map(upcomingCard).join("");
+if (past.length) html += `<div class="section-title">🗂️ מבחנים שהיו</div>` + past.map(pastCard).join("");
+if (!upcoming.length && !past.length) html = `<div class="section-title">אין תרגולים עדיין — בקרוב!</div>`;
+document.getElementById("content").innerHTML = html;
+document.getElementById("footerNote").textContent =
+  "ההתקדמות בכל משחק נשמרת בדפדפן · " + GAMES.length + " תרגולים באתר";
+
+for (let i = 0; i < 24; i++) {
+  const s = document.createElement("div");
+  s.className = "star"; s.textContent = "✦";
+  s.style.left = Math.random()*100 + "vw";
+  s.style.top = Math.random()*100 + "vh";
+  s.style.fontSize = (6 + Math.random()*10) + "px";
+  s.style.animationDelay = Math.random()*3 + "s";
+  document.body.appendChild(s);
+}
+</script>
+</body>
+</html>

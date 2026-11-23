@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📜 מסע בין הפרקים — חזרה למבחן בתנ"ך</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  button { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  body {
+    font-family: "Rubik", "Arial Hebrew", "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(180deg, #f4e3b8 0%, #e9cb90 45%, #cda269 100%);
+    min-height: 100vh;
+    color: #3d2b16;
+    overflow-x: hidden;
+  }
+  .sun { position: fixed; top: 24px; left: 32px; width: 70px; height: 70px; border-radius: 50%;
+    background: radial-gradient(circle, #fff3c4, #ffc95e); box-shadow: 0 0 60px 20px rgba(255,200,90,.5);
+    animation: spin 40s linear infinite; z-index: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .wave { position: fixed; bottom: 0; left: 0; right: 0; height: 90px; z-index: 0; opacity: .4;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 90"><path d="M0,55 C200,20 400,70 600,45 C800,20 1000,70 1200,45 L1200,90 L0,90 Z" fill="%23ffffff" opacity="0.35"/></svg>') repeat-x bottom;
+    background-size: 1200px 90px; }
+
+  .container { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 20px 16px 120px; }
+
+  header { text-align: center; margin-bottom: 18px; }
+  header h1 { color: #4a3115; font-size: clamp(26px, 6vw, 40px); text-shadow: 0 2px 0 rgba(255,255,255,.4); }
+  header p { color: #6b4a2b; font-size: 17px; margin-top: 6px; }
+
+  .scorebar { display: flex; justify-content: center; gap: 10px; margin: 14px 0 20px; flex-wrap: wrap; }
+  .chip { background: #fffaf0; border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 16px;
+    box-shadow: 0 3px 0 rgba(90,60,20,.25); display: flex; align-items: center; gap: 6px; }
+
+  .card { background: #fffaf0; border-radius: 22px; padding: 22px; box-shadow: 0 8px 0 rgba(90,60,20,.22);
+    margin-bottom: 16px; animation: pop .25s ease; }
+  @keyframes pop { from { transform: scale(.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .menu-btn { display: flex; align-items: center; gap: 14px; width: 100%; text-align: right;
+    background: #fff; border: 3px solid transparent; border-radius: 18px; padding: 16px 18px; margin-bottom: 12px;
+    font-family: inherit; font-size: 18px; font-weight: 700; color: #3d2b16; cursor: pointer;
+    box-shadow: 0 5px 0 rgba(90,60,20,.22); transition: transform .12s, border-color .12s; }
+  .menu-btn:hover { transform: translateY(-2px); border-color: #c89136; }
+  .menu-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(90,60,20,.22); }
+  .menu-btn .emoji { font-size: 34px; }
+  .menu-btn small { display: block; font-weight: 400; color: #7d6243; font-size: 14px; margin-top: 2px; }
+
+  .q-count { text-align: center; color: #7d6243; font-weight: 700; margin-bottom: 10px; }
+  .question { font-size: 21px; font-weight: 800; text-align: center; margin-bottom: 18px; line-height: 1.45; }
+
+  .answers { display: grid; gap: 10px; }
+  .ans { background: #f7eeda; border: 3px solid #e7d6b2; border-radius: 14px; padding: 14px 16px;
+    font-family: inherit; font-size: 17px; font-weight: 600; color: #3d2b16; cursor: pointer; text-align: right;
+    transition: transform .1s, background .15s, border-color .15s; }
+  .ans:hover { transform: scale(1.02); border-color: #c89136; }
+  .ans.correct { background: #d8f2d0; border-color: #4caf50; animation: bounce .4s; }
+  .ans.wrong { background: #ffd9d9; border-color: #ff5252; animation: shake .4s; }
+  .ans:disabled { cursor: default; opacity: .85; }
+  @keyframes bounce { 30% { transform: scale(1.06); } 60% { transform: scale(.98); } }
+  @keyframes shake { 20% { transform: translateX(6px); } 40% { transform: translateX(-6px); } 60% { transform: translateX(4px); } 80% { transform: translateX(-4px); } }
+
+  .feedback { text-align: center; font-size: 17px; font-weight: 700; min-height: 54px; margin-top: 14px; line-height: 1.4; }
+  .feedback .fact { display: block; font-weight: 400; font-size: 15px; color: #7d6243; margin-top: 4px; }
+
+  .big-btn { display: block; width: 100%; background: linear-gradient(180deg, #ffce63, #e8a62a);
+    color: #4a3115; border: none; border-radius: 16px; padding: 15px; font-family: inherit;
+    font-size: 19px; font-weight: 800; cursor: pointer; box-shadow: 0 5px 0 #a8731b; margin-top: 10px;
+    transition: transform .12s; }
+  .big-btn:hover { transform: translateY(-2px); }
+  .big-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #a8731b; }
+  .big-btn.secondary { background: #efe4cb; color: #5a3c1e; box-shadow: 0 5px 0 #c4ad85; }
+
+  .tf-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .tf-btn { border: none; border-radius: 16px; padding: 20px; font-family: inherit; font-size: 22px;
+    font-weight: 800; cursor: pointer; transition: transform .1s; box-shadow: 0 5px 0 rgba(90,60,20,.3); }
+  .tf-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(90,60,20,.3); }
+  .tf-true { background: #c9f3cf; color: #156b2a; }
+  .tf-false { background: #ffd4d4; color: #8f1d1d; }
+  .timerbar { height: 12px; background: #efe4cb; border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
+  .timerbar > div { height: 100%; width: 100%; background: linear-gradient(90deg, #4caf50, #ffce63, #ff5252);
+    border-radius: 999px; transition: width .1s linear; }
+
+  .memory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 520px) { .memory-grid { grid-template-columns: repeat(3, 1fr); } }
+  .mem-card { aspect-ratio: 3/3.4; perspective: 600px; cursor: pointer; border: none; background: none; padding: 0; }
+  .mem-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .4s; }
+  .mem-card.flipped .mem-inner { transform: rotateY(180deg); }
+  .mem-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; text-align: center; padding: 6px;
+    font-family: inherit; font-weight: 700; }
+  .mem-back { background: linear-gradient(135deg, #a9742f, #7c521c); color: #fff; font-size: 30px; }
+  .mem-front { background: #fff; border: 3px solid #c89136; transform: rotateY(180deg);
+    font-size: 12.5px; line-height: 1.3; color: #3d2b16; overflow: hidden; }
+  @media (max-width: 520px) {
+    .mem-front { font-size: 11.5px; padding: 4px; border-width: 2px; }
+    .sun { width: 44px; height: 44px; top: 12px; left: 12px; box-shadow: 0 0 36px 10px rgba(255,200,90,.4); }
+    header { padding: 0 56px; }
+    .container { padding-top: 14px; }
+  }
+  .mem-card.matched .mem-front { background: #d8f2d0; border-color: #4caf50; }
+  .mem-card.term .mem-front { background: #fdf3d7; }
+  .mem-card.matched.term .mem-front { background: #d8f2d0; }
+
+  .volcano-track { background: #fffaf0; border-radius: 22px; padding: 22px 18px 12px; margin-bottom: 14px;
+    box-shadow: 0 6px 0 rgba(90,60,20,.22); display: flex; align-items: center; gap: 10px; }
+  .volcano-track .side { font-size: 24px; }
+  .trail { position: relative; flex: 1; height: 14px; background: #efe4cb; border-radius: 999px; }
+  .trail-fill { position: absolute; top: 0; right: 0; bottom: 0; width: 0; border-radius: 999px;
+    background: linear-gradient(270deg, #4caf50, #ffce63); transition: width .6s ease; }
+  .climber { position: absolute; top: -26px; right: 0; font-size: 24px; transition: right .6s ease;
+    transform: translateX(50%); }
+
+  body.playing header { display: none; }
+  body.playing .scorebar { margin-top: 40px; }
+
+  .cov-title { font-weight: 800; font-size: 17px; text-align: center; margin-bottom: 12px; }
+  .cov-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 14px; font-weight: 700; }
+  .cov-row .lbl { width: 112px; }
+  .cov-bar { flex: 1; height: 12px; background: #efe4cb; border-radius: 999px; overflow: hidden; }
+  .cov-bar > div { height: 100%; background: linear-gradient(90deg, #4caf50, #9be15d); border-radius: 999px; width: 0; transition: width .5s; }
+  .cov-pct { width: 56px; text-align: left; color: #7d6243; }
+  .cov-total { text-align: center; margin-top: 6px; font-size: 15px; font-weight: 800; color: #156b2a; }
+  .reset-link { display: block; margin: 10px auto 0; background: none; border: none; color: #a88c62;
+    font-family: inherit; font-size: 13px; cursor: pointer; text-decoration: underline; }
+  .version-tag { text-align: center; color: #7a5a33; font-size: 13px; margin-top: 12px; }
+  .home-page-link { display: block; text-align: center; margin-top: 8px; color: #7a5a33; font-size: 14px; font-weight: 700; }
+
+  .confetti { position: fixed; top: -12px; z-index: 50; font-size: 22px; animation: fall linear forwards; pointer-events: none; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  .result-card { text-align: center; }
+  .result-card .big-emoji { font-size: 72px; display: block; margin-bottom: 8px; animation: bounce .6s; }
+  .result-card h2 { font-size: 26px; margin-bottom: 8px; }
+  .result-card p { color: #7d6243; font-size: 17px; margin-bottom: 14px; }
+  .stars { font-size: 36px; letter-spacing: 6px; margin-bottom: 10px; }
+
+  .home-link { position: fixed; top: 12px; right: 12px; z-index: 10; background: #fffaf0; border: none;
+    border-radius: 999px; padding: 10px 14px; font-family: inherit; font-weight: 800; font-size: 14px;
+    cursor: pointer; box-shadow: 0 4px 0 rgba(90,60,20,.25); color: #3d2b16; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="sun"></div>
+<div class="wave"></div>
+<button class="home-link hidden" id="homeBtn" onclick="goHome()">🏕️ תפריט</button>
+
+<div class="container">
+  <header>
+    <h1>📜 מסע בין הפרקים 🕊️</h1>
+    <p>חזרה למבחן בתנ"ך — ויקרא ובמדבר. בהצלחה!</p>
+  </header>
+
+  <div class="scorebar">
+    <div class="chip">⭐ ניקוד: <span id="totalScore">0</span></div>
+    <div class="chip">🔥 רצף: <span id="streak">0</span></div>
+  </div>
+
+  <!-- ===== MENU ===== -->
+  <div id="screen-menu">
+    <div class="card">
+      <button class="menu-btn" onclick="startQuiz()">
+        <span class="emoji">🚶</span>
+        <span>המסע במדבר<small>חידון עם 4 תשובות — כל תשובה נכונה מקדמת אתכם בעקבות הענן!</small></span>
+      </button>
+      <button class="menu-btn" onclick="startTF()">
+        <span class="emoji">⚡</span>
+        <span>נכון או לא נכון?<small>סיבוב מהיר נגד השעון — תחשבו מהר!</small></span>
+      </button>
+      <button class="menu-btn" onclick="startMemory()">
+        <span class="emoji">📜</span>
+        <span>זיכרון מושגים<small>מצאו את הזוגות: מושג + הפירוש שלו</small></span>
+      </button>
+    </div>
+    <div class="card">
+      <div class="cov-title">📚 כמה מהחומר כבר כיסית?</div>
+      <div class="cov-row"><span class="lbl">🚶 חידון</span><div class="cov-bar"><div id="covQ"></div></div><span class="cov-pct" id="covQt"></span></div>
+      <div class="cov-row"><span class="lbl">⚡ נכון/לא נכון</span><div class="cov-bar"><div id="covT"></div></div><span class="cov-pct" id="covTt"></span></div>
+      <div class="cov-row"><span class="lbl">📜 זוגות</span><div class="cov-bar"><div id="covP"></div></div><span class="cov-pct" id="covPt"></span></div>
+      <div class="cov-total" id="covTotal"></div>
+      <button class="reset-link" onclick="resetProgress()">איפוס התקדמות</button>
+    </div>
+    <div class="card" style="text-align:center; font-size:15px; color:#7d6243;">
+      💡 טיפ: כל סיבוב מביא קודם שאלות שעוד לא ענית עליהן נכון — שחקו עד שהפסים מתמלאים!
+    </div>
+    <div class="version-tag" id="versionTag"></div>
+    <a class="home-page-link" href="../../../">🏠 לכל התרגולים</a>
+  </div>
+
+  <!-- ===== QUIZ ===== -->
+  <div id="screen-quiz" class="hidden">
+    <div class="volcano-track">
+      <span class="side">🏺</span>
+      <div class="trail">
+        <div class="trail-fill" id="trailFill"></div>
+        <span class="climber" id="climber">🚶</span>
+      </div>
+      <span class="side">🌳</span>
+    </div>
+    <div class="card">
+      <div class="q-count" id="quizCount"></div>
+      <div class="question" id="quizQ"></div>
+      <div class="answers" id="quizAnswers"></div>
+      <div class="feedback" id="quizFeedback"></div>
+      <button class="big-btn hidden" id="quizNext" onclick="nextQuizQ()">לשאלה הבאה ⬅️</button>
+    </div>
+  </div>
+
+  <!-- ===== TRUE/FALSE ===== -->
+  <div id="screen-tf" class="hidden">
+    <div class="card">
+      <div class="timerbar"><div id="tfTimer"></div></div>
+      <div class="q-count" id="tfCount"></div>
+      <div class="question" id="tfQ"></div>
+      <div class="tf-wrap">
+        <button class="tf-btn tf-true" onclick="answerTF(true)">✔️ נכון</button>
+        <button class="tf-btn tf-false" onclick="answerTF(false)">✖️ לא נכון</button>
+      </div>
+      <div class="feedback" id="tfFeedback"></div>
+    </div>
+  </div>
+
+  <!-- ===== MEMORY ===== -->
+  <div id="screen-memory" class="hidden">
+    <div class="card">
+      <div class="q-count" id="memCount">מצאו את כל הזוגות! 🟡 מושג + 📜 פירוש</div>
+      <div class="memory-grid" id="memGrid"></div>
+    </div>
+  </div>
+
+  <!-- ===== RESULT ===== -->
+  <div id="screen-result" class="hidden">
+    <div class="card result-card">
+      <span class="big-emoji" id="resEmoji">🏆</span>
+      <div class="stars" id="resStars"></div>
+      <h2 id="resTitle"></h2>
+      <p id="resText"></p>
+      <button class="big-btn" id="resAgain"></button>
+      <button class="big-btn secondary" onclick="goHome()">🏕️ חזרה לתפריט</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= DATA ================= */
+const QUIZ = [
+  { q: "למי משאירים את הפאה והלקט בשדה?", a: ["לעני ולגר", "לכוהנים", "למלך", "לבעל השדה"],
+    fact: "בעל השדה משאיר את פינת השדה ואת השיבולים שנפלו — למי שאין לו משלו." },
+  { q: "כיצד מצווה התורה להתייחס לגר?", a: ["לאהוב אותו ולא להונות אותו", "להרחיק אותו מהעיר", "לקחת ממנו מס מיוחד", "להתעלם ממנו"],
+    fact: "\"כי גרים הייתם בארץ מצרים\" — אתם יודעים בדיוק איך מרגיש גר." },
+  { q: "מה פירוש הציווי \"ואהבת לרעך כמוך\"?", a: ["להתייחס לאחרים כפי שהיינו רוצים שיתייחסו אלינו", "לאהוב רק את בני המשפחה", "לתת מתנות לכולם", "לאהוב את עצמנו בלבד"],
+    fact: "למשל: לשתף חבר שנשאר לבד בהפסקה, ולא לצחוק על מי שטעה." },
+  { q: "מה פירוש האיסור \"לא תיקום ולא תיטור\"?", a: ["לא לנקום ולא לשמור טינה בלב", "לא לטייל בשדות של אחרים", "לא לשמור חפצים אבודים", "לא לנטוע עצים בשמיטה"],
+    fact: "גם כשמישהו פגע בנו — לא מחזירים לו, וגם לא 'שומרים לו את זה' בלב." },
+  { q: "מה נדרש מאדם שנמצא בסכסוך עם חברו, לפי המצוות בפרק?", a: ["להימנע מנקמה ומנטירת טינה", "להשיב לחברו באותה התנהגות", "להתרחק מכל בני האדם", "להמתין עד שחברו ייענש"],
+    fact: "אפשר גם להוכיח את החבר — לדבר איתו על מה שקרה — אבל בלי לנקום." },
+  { q: "מה המשותף למצוות לקט, פאה והיחס לגר?", a: ["כולן מבטאות דאגה לאחר ולמי שזקוק לעזרה", "כולן עוסקות בעבודת הכוהנים", "כולן עוסקות בהקרבת קורבנות", "כולן מתקיימות רק בשנת היובל"],
+    fact: "פרק י\"ט בויקרא מלא מצוות שבין אדם לחברו." },
+  { q: "אילו מצוות מפרק י\"ט עוסקות ביחסים שבין אדם לחברו?", a: ["לא תגנובו, לא תלך רכיל, לא תקלל חרש", "הקרבת קורבנות ותקיעת שופר", "בניית המשכן", "ציוויי המסע במדבר"],
+    fact: "ועוד: לפני עיוור לא תיתן מכשול, לא תעשוק, הוכח תוכיח את עמיתך." },
+  { q: "באיזו שנה מתקיימת השמיטה?", a: ["בשנה השביעית", "בשנת החמישים", "בכל שנה", "בשנה העשירית"],
+    fact: "כמו שבת אחרי שישה ימים — האדמה שובתת אחרי שש שנות עבודה." },
+  { q: "באיזו שנה מתקיים היובל?", a: ["בשנת החמישים", "בשנה השביעית", "בשנה העשרים", "פעם במאה שנה"],
+    fact: "אחרי שבע שמיטות (7x7=49) מגיעה שנת החמישים — היובל." },
+  { q: "אילו עבודות אסורות בשנת השמיטה וביובל?", a: ["עבודות האדמה — זריעה, זמירה, קצירה ובצירה", "בישול ואפייה", "רעיית צאן", "בניית בתים"],
+    fact: "האדמה שובתת — נותנים לה מנוחה שלמה." },
+  { q: "מי רשאי לאכול מתבואת הארץ בשנת השמיטה?", a: ["כולם — בעל השדה, העניים, הגר ואפילו בעלי החיים", "רק בעל השדה", "רק הכוהנים", "אף אחד"],
+    fact: "בשמיטה היבול שייך לכולם במידה שווה." },
+  { q: "מה האירוע המיוחד ביום הכיפורים בשנת היובל?", a: ["תוקעים בשופר בכל הארץ", "מדליקים נרות ענק", "קוראים מגילה", "בונים סוכה"],
+    fact: "תקיעת השופר מכריזה: דרור (חופש) לכל יושבי הארץ!" },
+  { q: "מה פירוש הציווי \"ושבתם איש אל אחוזתו\"?", a: ["כל אדם חוזר לנחלת המשפחה שלו", "כולם חוזרים הביתה לפני החושך", "שובתים ממלאכה בשבת", "יושבים ליד הבית כל היום"],
+    fact: "ביובל, אדמות שנמכרו חוזרות לבעליהן המקוריים." },
+  { q: "מה מיוחד בשנת היובל מעבר לשביתת האדמה?", a: ["שיבת אנשים לנחלתם ושחרור עבדים עבריים", "חידוש עבודת האדמה בכל השדות", "הקמת משכן חדש", "איסור על אכילת פירות"],
+    fact: "עבדים עבריים יוצאים לחופשי וכל אחד חוזר לאדמת משפחתו." },
+  { q: "מי מצווה לברך את בני ישראל בברכת כוהנים?", a: ["אהרן ובניו — הכוהנים", "משה", "שבעים הזקנים", "ראשי השבטים"],
+    fact: "\"כה תברכו את בני ישראל\" — הציווי ניתן לאהרן ולבניו." },
+  { q: "איזה רעיון חוזר בשלוש הברכות של ברכת כוהנים?", a: ["בקשה לטוב, להגנה ולשלום מאת ה'", "בקשה שהעם יחיה ללא עבודה", "בקשה שהעם יישאר במדבר", "בקשה שכל בני ישראל יהיו כוהנים"],
+    fact: "הברכה האחרונה מסתיימת במילה הכי חשובה — שלום." },
+  { q: "למי מיועדת ברכת כוהנים?", a: ["לכל בני ישראל", "לכוהנים בלבד", "רק לזקנים", "רק למנהיגים"],
+    fact: "הכוהנים מברכים — אבל הברכה היא לכל העם." },
+  { q: "מהן שלוש הבקשות בברכת כוהנים?", a: ["ברכה ושמירה, הארת פנים וחנינה, שלום", "עושר, כבוד ושלטון", "גשם, יבול ופרי", "חוכמה, גבורה וניצחון"],
+    fact: "\"יברכך ה' וישמרך, יאר ה' פניו אליך ויחונך, ישא ה' פניו אליך וישם לך שלום.\"" },
+  { q: "כיצד נראה הענן מעל המשכן ביום, וכיצד בלילה?", a: ["ביום — ענן, בלילה — כמראה אש", "תמיד כעשן שחור", "ביום אש ובלילה ענן", "רק ביום היה נראה"],
+    fact: "כך בני ישראל ראו את הסימן גם בחושך של הלילה." },
+  { q: "מה היה הסימן לבני ישראל שעליהם לצאת למסע?", a: ["הענן נעלה מעל המשכן", "תקיעת שופר בלבד", "זריחת השמש", "פקודה של ראשי השבטים"],
+    fact: "כשהענן עולה — אורזים את המחנה ויוצאים לדרך." },
+  { q: "איך ידעו בני ישראל מתי לחנות?", a: ["כשהענן שכן (נח) מעל המשכן — חנו", "כשירד גשם", "כשנגמר האוכל", "כשהחשיך"],
+    fact: "הענן היה ה'נווט' של המסע כולו." },
+  { q: "מה קבע את משך החנייה של בני ישראל בכל מקום?", a: ["משך הזמן שבו שכן הענן מעל המשכן", "כמות המזון שברשותם", "החלטת ראשי השבטים", "מזג האוויר במדבר"],
+    fact: "על פי ה' יחנו ועל פי ה' ייסעו." },
+  { q: "האם משך החנייה היה קבוע?", a: ["לא — לפעמים יומיים, לפעמים חודש ואפילו שנה", "כן, תמיד לילה אחד", "כן, תמיד שבוע", "כן, תמיד חודש בדיוק"],
+    fact: "הכול לפי הענן — בלי לדעת מראש כמה זמן נשארים." },
+  { q: "מה עשו בני ישראל כאשר הענן נעלה מעל המשכן?", a: ["התכוננו למסע והמשיכו בדרכם", "הקימו משכן נוסף", "חזרו למצרים", "המתינו עד סוף החודש"],
+    fact: "הענן עולה = ממשיכים במסע אל ארץ ישראל." },
+  { q: "מדוע כונו בני ישראל \"מתאוננים\"?", a: ["כי התלוננו על קשיי הדרך", "כי אהבו לישון", "כי שרו שירים", "כי התאמנו כל היום"],
+    fact: "הם התלוננו רע באוזני ה' — וזה לא מצא חן בעיניו." },
+  { q: "מה קרה בעקבות תלונות העם בתחילת פרק י\"א?", a: ["פרצה אש בקצה המחנה, ומשה התפלל אל ה'", "משה עזב את המחנה", "העם נכנס מיד לארץ ישראל", "כל הזקנים חזרו למצרים"],
+    fact: "אחרי תפילת משה — האש שקעה. המקום נקרא \"תבערה\"." },
+  { q: "על מה התלוננו בני ישראל בנוגע למזונם?", a: ["שנמאס להם מהמן והם רוצים בשר", "שאין להם מים בכלל", "שהלחם קשה מדי", "שאין מספיק פירות"],
+    fact: "\"זכרנו את הדגה אשר נאכל במצרים חינם...\"" },
+  { q: "אילו מאכלים ממצרים הזכירו בני ישראל?", a: ["דגים, קישואים, אבטיחים, בצלים ושומים", "פיצה ושניצל", "תמרים ודבש", "לחם ויין בלבד"],
+    fact: "וגם את החציר — הם התגעגעו דווקא לירקות של מצרים!" },
+  { q: "מה היה הקושי של משה בהנהגת העם?", a: ["הרגיש שאינו יכול לשאת לבדו את העם ותלונותיו", "לא ידע את הדרך במדבר", "לא ידע לדבר יפה", "רצה לחזור למצרים"],
+    fact: "\"לא אוכל אנוכי לבדי לשאת את כל העם הזה כי כבד ממני.\"" },
+  { q: "כיצד סייע ה' למשה להתמודד עם הקושי?", a: ["שבעים זקנים קיבלו רוח ועזרו לו בהנהגה", "נתן לו מקל קסמים חדש", "שלח מלאכים להנהיג את העם", "בנה לו אוהל גדול יותר"],
+    fact: "ה' האציל מהרוח שעל משה על שבעים הזקנים — חלוקת אחריות!" },
+  { q: "מי היו אלדד ומידד, והיכן התנבאו?", a: ["שניים מהזקנים — התנבאו בתוך המחנה", "אחיו של משה — בהר סיני", "מרגלים — בארץ כנען", "כוהנים — בתוך המשכן"],
+    fact: "יהושע התרגז, אבל משה אמר: הלוואי שכל העם יהיו נביאים!" },
+  { q: "מה הבטיח ה' לעם בנוגע לאכילת בשר?", a: ["בשר לחודש ימים שלם — עד שיימאס להם", "ארוחת בשר אחת בלבד", "בשר רק בשבתות", "שלא יאכלו בשר לעולם"],
+    fact: "ואז הגיעו להקות השְׂלָו (עוף הבשר) אל המחנה." },
+  { q: "מדוע נקרא המקום \"קברות התאווה\"?", a: ["כי שם נקברו האנשים שהתאוו לבשר ומתו במגפה", "כי קברו שם אוצרות יקרים", "כי היה שם בית קברות עתיק", "כי כולם התאוו לחזור אליו"],
+    fact: "שם המקום מזכיר את מה שקרה בו — התאווה שהובילה לעונש." },
+];
+
+const TF = [
+  { q: "בשנת היובל תוקעים בשופר ביום הכיפורים.", t: true, fact: "התקיעה מכריזה על שנת הדרור — החופש." },
+  { q: "בשנת השמיטה מותר לזרוע את השדות כרגיל.", t: false, fact: "אסור! בשמיטה האדמה שובתת — אין זריעה ואין קצירה רגילה." },
+  { q: "ברכת כוהנים מיועדת לכוהנים בלבד.", t: false, fact: "הכוהנים מברכים — אבל הברכה מיועדת לכל בני ישראל." },
+  { q: "בני ישראל נסעו כאשר הענן נעלה מעל המשכן.", t: true, fact: "הענן עולה = יוצאים למסע." },
+  { q: "בני ישראל חנו תמיד לילה אחד בלבד.", t: false, fact: "משך החנייה השתנה — יומיים, חודש ואפילו שנה, לפי הענן." },
+  { q: "אלדד ומידד התנבאו במחנה.", t: true, fact: "הם נשארו במחנה והתנבאו שם — ומשה דווקא שמח." },
+  { q: "משה ביקש מה' עזרה בהנהגת העם.", t: true, fact: "ה' ענה: אספו לי שבעים איש מזקני ישראל." },
+  { q: "התורה מתירה לנקום באדם שפגע בנו.", t: false, fact: "להפך: \"לא תיקום ולא תיטור\" — בלי נקמה ובלי טינה." },
+  { q: "השמיטה מתקיימת בשנה השביעית.", t: true, fact: "שש שנים עובדים את האדמה — ובשביעית היא שובתת." },
+  { q: "היובל מתקיים בשנת הארבעים.", t: false, fact: "היובל בשנת החמישים — אחרי שבע שמיטות." },
+  { q: "את הפאה והלקט משאירים לעני ולגר.", t: true, fact: "פינת השדה והשיבולים שנפלו — למי שזקוק להם." },
+  { q: "הענן נראה בלילה כמראה אש.", t: true, fact: "ביום ענן, בלילה אש — סימן שרואים תמיד." },
+  { q: "בני ישראל התלוננו שנמאס להם מהמן.", t: true, fact: "הם רצו בשר ונזכרו במאכלי מצרים." },
+  { q: "אהרן ובניו מצווים לברך את בני ישראל.", t: true, fact: "זוהי ברכת הכוהנים שבספר במדבר פרק ו'." },
+  { q: "ביובל עבדים עבריים יוצאים לחופשי.", t: true, fact: "וכל אדם שב אל אחוזתו — לנחלת משפחתו." },
+  { q: "משה כעס על אלדד ומידד שהתנבאו במחנה.", t: false, fact: "יהושע הוא שהתרגז. משה אמר: הלוואי שכל העם נביאים!" },
+  { q: "בשנת השמיטה רק בעל השדה אוכל מהתבואה.", t: false, fact: "כולם אוכלים — העניים, הגר ואפילו בעלי החיים." },
+  { q: "בעקבות התלונות פרצה אש בקצה המחנה.", t: true, fact: "משה התפלל — והאש שקעה. המקום נקרא \"תבערה\"." },
+];
+
+const PAIRS = [
+  { term: "שמיטה", def: "השנה השביעית — האדמה שובתת" },
+  { term: "יובל", def: "שנת החמישים — חוזרים לנחלה" },
+  { term: "פאה", def: "פינת השדה שמשאירים לעני ולגר" },
+  { term: "לקט", def: "שיבולים שנפלו בקציר — לעני ולגר" },
+  { term: "גר", def: "מי שבא מארץ אחרת לגור בינינו" },
+  { term: "לא תיטור", def: "לא לשמור טינה בלב" },
+  { term: "ברכת כוהנים", def: "ברכת אהרן ובניו לכל העם" },
+  { term: "הענן", def: "הסימן למסע ולחנייה במדבר" },
+  { term: "מתאוננים", def: "מתלוננים על קשיי הדרך" },
+  { term: "שבעים הזקנים", def: "קיבלו רוח ועזרו למשה להנהיג" },
+  { term: "אלדד ומידד", def: "התנבאו בתוך המחנה" },
+  { term: "קברות התאווה", def: "שם נקברו המתאווים לבשר" },
+  { term: "שליו", def: "העוף שה' שלח כבשר לעם" },
+  { term: "ואהבת לרעך", def: "להתייחס לאחר כמו לעצמך" },
+];
+
+/* ================= STATE ================= */
+const VERSION = "גרסה 1 · עודכן 23.11.2026";
+const store = (() => { try { return JSON.parse(localStorage.getItem("tanachGameProgress") || "{}"); } catch (e) { return {}; } })();
+store.quiz = store.quiz || {}; store.tf = store.tf || {}; store.pairs = store.pairs || {}; store.score = store.score || 0;
+function saveStore() { try { localStorage.setItem("tanachGameProgress", JSON.stringify(store)); } catch (e) {} }
+function markCovered(kind, key) { store[kind][key] = 1; saveStore(); renderCoverage(); }
+
+let totalScore = store.score, streak = 0;
+const $ = id => document.getElementById(id);
+
+function covCount(kind, pool, keyFn) { return pool.filter(x => store[kind][keyFn(x)]).length; }
+function renderCoverage() {
+  const sets = [
+    ["quiz", QUIZ, x => x.q, "covQ", "covQt"],
+    ["tf", TF, x => x.q, "covT", "covTt"],
+    ["pairs", PAIRS, x => x.term, "covP", "covPt"],
+  ];
+  let done = 0, total = 0;
+  sets.forEach(([kind, pool, keyFn, barId, txtId]) => {
+    const c = covCount(kind, pool, keyFn);
+    done += c; total += pool.length;
+    $(barId).style.width = (c / pool.length * 100) + "%";
+    $(txtId).textContent = c + "/" + pool.length;
+  });
+  $("covTotal").textContent = done === total
+    ? "🏆 כיסית את כל החומר! אלוף/ה!"
+    : "סה\"כ: " + Math.round(done / total * 100) + "% מהחומר";
+  $("versionTag").textContent = VERSION + " · " + QUIZ.length + " שאלות, " + TF.length + " נכון/לא נכון, " + PAIRS.length + " זוגות";
+}
+function resetProgress() {
+  if (!confirm("לאפס את כל ההתקדמות והניקוד?")) return;
+  store.quiz = {}; store.tf = {}; store.pairs = {}; store.score = 0;
+  totalScore = 0; streak = 0;
+  $("totalScore").textContent = 0; $("streak").textContent = 0;
+  saveStore(); renderCoverage();
+}
+function samplePreferUncovered(pool, keyFn, covered, n) {
+  const fresh = shuffle(pool.filter(x => !covered[keyFn(x)]));
+  const seen = shuffle(pool.filter(x => covered[keyFn(x)]));
+  return fresh.concat(seen).slice(0, n);
+}
+
+const screens = ["menu","quiz","tf","memory","result"];
+function show(name) {
+  screens.forEach(s => $("screen-"+s).classList.toggle("hidden", s !== name));
+  $("homeBtn").classList.toggle("hidden", name === "menu");
+  document.body.classList.toggle("playing", name !== "menu");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function setTrail(pct) {
+  $("trailFill").style.width = (pct * 100) + "%";
+  $("climber").style.right = (pct * 100) + "%";
+}
+function goHome() { stopTFTimer(); show("menu"); }
+function addScore(n) {
+  totalScore += n;
+  $("totalScore").textContent = totalScore;
+  store.score = totalScore;
+  saveStore();
+}
+function setStreak(ok) {
+  streak = ok ? streak + 1 : 0;
+  $("streak").textContent = streak;
+}
+function shuffle(arr) { return [...arr].sort(() => Math.random() - .5); }
+function confetti(n = 30) {
+  const emojis = ["🎉","⭐","📜","🕊️","🌾","✨","🎺"];
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement("div");
+    el.className = "confetti";
+    el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left = Math.random()*100 + "vw";
+    el.style.animationDuration = (2 + Math.random()*2) + "s";
+    el.style.animationDelay = Math.random()*0.5 + "s";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 5000);
+  }
+}
+
+let audioCtx;
+function beep(freq, dur = .15, type = "sine", gain = .15) {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.value = gain; g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  } catch (e) {}
+}
+const sndGood = () => { beep(660, .12); setTimeout(() => beep(880, .18), 110); };
+const sndBad = () => beep(180, .3, "sawtooth", .08);
+const sndWin = () => [523,659,784,1047].forEach((f,i) => setTimeout(() => beep(f,.2), i*160));
+
+/* ================= RESULT ================= */
+function showResult({ correct, total, title, againFn, againLabel }) {
+  const ratio = correct / total;
+  $("resStars").textContent = ratio >= .9 ? "⭐⭐⭐" : ratio >= .6 ? "⭐⭐" : "⭐";
+  $("resEmoji").textContent = ratio >= .9 ? "🏆" : ratio >= .6 ? "🎉" : "💪";
+  $("resTitle").textContent = title;
+  $("resText").textContent = ratio >= .9 ? `וואו! ${correct} מתוך ${total} — אתם מוכנים למבחן!`
+    : ratio >= .6 ? `יפה מאוד! ${correct} מתוך ${total}. עוד סיבוב ותהיו אלופים!`
+    : `${correct} מתוך ${total} — התחלה טובה! שחקו שוב וזה ייכנס לראש.`;
+  const btn = $("resAgain");
+  btn.textContent = againLabel;
+  btn.onclick = againFn;
+  show("result");
+  if (ratio >= .6) { confetti(ratio >= .9 ? 50 : 25); sndWin(); }
+}
+
+/* ================= QUIZ ================= */
+let quizQs = [], quizIdx = 0, quizCorrect = 0;
+const QUIZ_LEN = 10;
+function startQuiz() {
+  quizQs = samplePreferUncovered(QUIZ, x => x.q, store.quiz, QUIZ_LEN);
+  quizIdx = 0; quizCorrect = 0;
+  show("quiz");
+  renderQuizQ();
+}
+function renderQuizQ() {
+  const item = quizQs[quizIdx];
+  $("quizCount").textContent = `שאלה ${quizIdx+1} מתוך ${quizQs.length}`;
+  $("quizQ").textContent = item.q;
+  $("quizFeedback").textContent = "";
+  $("quizNext").classList.add("hidden");
+  const correct = item.a[0];
+  const opts = shuffle(item.a);
+  $("quizAnswers").innerHTML = "";
+  opts.forEach(opt => {
+    const b = document.createElement("button");
+    b.className = "ans";
+    b.textContent = opt;
+    b.onclick = () => answerQuiz(b, opt === correct, correct, item.fact);
+    $("quizAnswers").appendChild(b);
+  });
+  setTrail(quizIdx / quizQs.length);
+}
+function answerQuiz(btn, ok, correct, fact) {
+  [...$("quizAnswers").children].forEach(b => {
+    b.disabled = true;
+    if (b.textContent === correct) b.classList.add("correct");
+  });
+  if (ok) {
+    quizCorrect++; addScore(10 + Math.min(streak, 5) * 2); setStreak(true); sndGood();
+    markCovered("quiz", quizQs[quizIdx].q);
+    $("quizFeedback").innerHTML = `✅ מעולה!<span class="fact">${fact}</span>`;
+  } else {
+    btn.classList.add("wrong"); setStreak(false); sndBad();
+    $("quizFeedback").innerHTML = `❌ לא נורא! התשובה: <b>${correct}</b><span class="fact">${fact}</span>`;
+  }
+  $("quizNext").classList.remove("hidden");
+}
+function nextQuizQ() {
+  quizIdx++;
+  if (quizIdx < quizQs.length) { renderQuizQ(); return; }
+  setTrail(1);
+  showResult({ correct: quizCorrect, total: quizQs.length,
+    title: quizCorrect === quizQs.length ? "הגעתם אל הארץ המובטחת!" : "סיימתם את המסע!",
+    againFn: startQuiz, againLabel: "🚶 לצאת למסע נוסף" });
+}
+
+/* ================= TRUE / FALSE ================= */
+let tfQs = [], tfIdx = 0, tfCorrect = 0, tfTimerId = null, tfTimeLeft = 0, tfLocked = false;
+const TF_LEN = 10, TF_SECONDS = 10;
+function startTF() {
+  tfQs = samplePreferUncovered(TF, x => x.q, store.tf, TF_LEN);
+  tfIdx = 0; tfCorrect = 0;
+  show("tf");
+  renderTFQ();
+}
+function renderTFQ() {
+  tfLocked = false;
+  const item = tfQs[tfIdx];
+  $("tfCount").textContent = `שאלה ${tfIdx+1} מתוך ${tfQs.length}`;
+  $("tfQ").textContent = item.q;
+  $("tfFeedback").textContent = "";
+  tfTimeLeft = TF_SECONDS * 10;
+  stopTFTimer();
+  tfTimerId = setInterval(() => {
+    tfTimeLeft--;
+    $("tfTimer").style.width = (tfTimeLeft / (TF_SECONDS*10) * 100) + "%";
+    if (tfTimeLeft <= 0) { answerTF(null); }
+  }, 100);
+}
+function stopTFTimer() { if (tfTimerId) { clearInterval(tfTimerId); tfTimerId = null; } }
+function answerTF(val) {
+  if (tfLocked) return;
+  tfLocked = true;
+  stopTFTimer();
+  const item = tfQs[tfIdx];
+  const ok = val === item.t;
+  if (ok) {
+    tfCorrect++; addScore(10 + Math.ceil(tfTimeLeft/10)); setStreak(true); sndGood();
+    markCovered("tf", item.q);
+    $("tfFeedback").innerHTML = `✅ בול!<span class="fact">${item.fact}</span>`;
+  } else {
+    setStreak(false); sndBad();
+    const headline = val === null ? "⏰ נגמר הזמן!" : "❌ אופס!";
+    $("tfFeedback").innerHTML = `${headline} התשובה: <b>${item.t ? "נכון" : "לא נכון"}</b><span class="fact">${item.fact}</span>`;
+  }
+  setTimeout(() => {
+    tfIdx++;
+    if (tfIdx < tfQs.length) renderTFQ();
+    else showResult({ correct: tfCorrect, total: tfQs.length, title: "סיבוב הברקים הסתיים!",
+      againFn: startTF, againLabel: "⚡ עוד סיבוב מהיר" });
+  }, 2200);
+}
+
+/* ================= MEMORY ================= */
+let memFirst = null, memLock = false, memMatched = 0, memPairs = [];
+const MEM_PAIRS = 8;
+function startMemory() {
+  memPairs = samplePreferUncovered(PAIRS, p => p.term, store.pairs, MEM_PAIRS);
+  memFirst = null; memLock = false; memMatched = 0;
+  const cards = shuffle(memPairs.flatMap((p, i) => [
+    { id: i, text: p.term, kind: "term" },
+    { id: i, text: p.def, kind: "def" },
+  ]));
+  const grid = $("memGrid");
+  grid.innerHTML = "";
+  cards.forEach(c => {
+    const b = document.createElement("button");
+    b.className = "mem-card" + (c.kind === "term" ? " term" : "");
+    b.dataset.id = c.id;
+    b.innerHTML = `<div class="mem-inner">
+      <div class="mem-face mem-back">${c.kind === "term" ? "🟡" : "📜"}</div>
+      <div class="mem-face mem-front">${c.text}</div>
+    </div>`;
+    b.onclick = () => flipMem(b);
+    grid.appendChild(b);
+  });
+  show("memory");
+}
+function flipMem(card) {
+  if (memLock || card.classList.contains("flipped")) return;
+  card.classList.add("flipped");
+  beep(500, .08, "sine", .08);
+  if (!memFirst) { memFirst = card; return; }
+  const a = memFirst, b = card;
+  memFirst = null;
+  if (a.dataset.id === b.dataset.id) {
+    a.classList.add("matched"); b.classList.add("matched");
+    memMatched++; addScore(15); setStreak(true); sndGood();
+    markCovered("pairs", memPairs[a.dataset.id].term);
+    if (memMatched === memPairs.length) {
+      setTimeout(() => showResult({ correct: memPairs.length, total: memPairs.length,
+        title: "זיכרון של אלופים!", againFn: startMemory, againLabel: "📜 לשחק שוב" }), 600);
+    }
+  } else {
+    memLock = true; setStreak(false);
+    setTimeout(() => {
+      a.classList.remove("flipped"); b.classList.remove("flipped");
+      memLock = false;
+    }, 900);
+  }
+}
+
+$("totalScore").textContent = totalScore;
+renderCoverage();
+</script>
+</body>
+</html>
