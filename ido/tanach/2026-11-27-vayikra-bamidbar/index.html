@@ -125,6 +125,26 @@
   .version-tag { text-align: center; color: #7a5a33; font-size: 13px; margin-top: 12px; }
   .home-page-link { display: block; text-align: center; margin-top: 8px; color: #7a5a33; font-size: 14px; font-weight: 700; }
 
+  .menu-btn.locked { opacity: .6; cursor: not-allowed; }
+  .rv-topic { margin-bottom: 10px; border-radius: 14px; background: rgba(0,0,0,.035); padding: 4px 12px; }
+  .rv-topic summary { font-weight: 800; font-size: 16px; padding: 10px 0; cursor: pointer; }
+  .rv-topic summary .rv-count { float: left; font-weight: 700; color: #156b2a; }
+  .rv-item { padding: 8px 10px; border-radius: 10px; margin: 6px 0; font-size: 14.5px; line-height: 1.4; background: #e6f6e1; }
+  .rv-item.todo { background: rgba(0,0,0,.05); color: #8a8a8a; }
+  .rv-a { display: block; font-weight: 700; color: #156b2a; margin-top: 2px; }
+  .grade { font-size: 68px; font-weight: 800; line-height: 1.1; }
+  .ex-miss { background: #fff1f1; border-radius: 12px; padding: 10px 12px; margin: 8px 0; font-size: 14.5px; line-height: 1.45; }
+  .ex-miss b { color: #156b2a; }
+  .ex-miss s { color: #b23b3b; }
+  .party-backdrop { position: fixed; inset: 0; background: rgba(20,15,5,.6); z-index: 40; }
+  .party-overlay { position: fixed; inset: 0; z-index: 60;
+    display: flex; align-items: center; justify-content: center; padding: 18px; }
+  .party-card { background: #fffdf5; border-radius: 26px; padding: 26px 22px; max-width: 420px; width: 100%;
+    text-align: center; box-shadow: 0 10px 0 rgba(0,0,0,.3); animation: pop .35s ease; }
+  .party-card .big-emoji { font-size: 84px; display: block; animation: bounce .8s infinite; }
+  .party-card h2 { font-size: 24px; margin: 8px 0; }
+  .party-card p { font-size: 16px; line-height: 1.5; margin-bottom: 12px; opacity: .8; }
+
   .confetti { position: fixed; top: -12px; z-index: 50; font-size: 22px; animation: fall linear forwards; pointer-events: none; }
   @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
 
@@ -170,6 +190,14 @@
       <button class="menu-btn" onclick="startMemory()">
         <span class="emoji">📜</span>
         <span>זיכרון מושגים<small>מצאו את הזוגות: מושג + הפירוש שלו</small></span>
+      </button>
+      <button class="menu-btn" onclick="showReview()">
+        <span class="emoji">📖</span>
+        <span>מה כבר למדתי?<small>כל מה שעניתי עליו נכון — מסודר לפי נושאים</small></span>
+      </button>
+      <button class="menu-btn locked" id="examBtn" onclick="startExam()">
+        <span class="emoji" id="examEmoji">🔒</span>
+        <span>המבחן המסכם<small id="examSub"></small></span>
       </button>
     </div>
     <div class="card">
@@ -228,6 +256,36 @@
     </div>
   </div>
 
+  <!-- ===== REVIEW ===== -->
+  <div id="screen-review" class="hidden">
+    <div class="card">
+      <div class="cov-title">📖 מה כבר למדתי?</div>
+      <div id="reviewBody"></div>
+    </div>
+  </div>
+
+  <!-- ===== EXAM ===== -->
+  <div id="screen-exam" class="hidden">
+    <div class="card">
+      <div class="cov-bar" style="margin-bottom:14px"><div id="exBar"></div></div>
+      <div class="q-count" id="exCount"></div>
+      <div class="question" id="exQ"></div>
+      <div class="answers" id="exAnswers"></div>
+      <div class="q-count" style="margin:14px 0 0; font-weight:400; font-size:14px">🎓 במבחן אין רמזים — התשובות מתגלות בסוף</div>
+    </div>
+  </div>
+  <div id="screen-examres" class="hidden">
+    <div class="card result-card">
+      <span class="big-emoji" id="exEmoji"></span>
+      <div class="grade" id="exGrade"></div>
+      <h2 id="exTitle"></h2>
+      <p id="exText"></p>
+      <div id="exMistakes" style="text-align:right"></div>
+      <button class="big-btn" onclick="startExam()">🎓 מבחן נוסף</button>
+      <button class="big-btn secondary" onclick="goHome()">חזרה לתפריט</button>
+    </div>
+  </div>
+
   <!-- ===== RESULT ===== -->
   <div id="screen-result" class="hidden">
     <div class="card result-card">
@@ -238,6 +296,17 @@
       <button class="big-btn" id="resAgain"></button>
       <button class="big-btn secondary" onclick="goHome()">🏕️ חזרה לתפריט</button>
     </div>
+  </div>
+</div>
+
+<div class="party-backdrop hidden" id="partyBackdrop"></div>
+<div class="party-overlay hidden" id="partyOverlay">
+  <div class="party-card">
+    <span class="big-emoji" id="partyEmoji"></span>
+    <h2 id="partyTitle"></h2>
+    <p id="partyText"></p>
+    <button class="big-btn" onclick="closeParty(); startExam();">🎓 למבחן המסכם!</button>
+    <button class="big-btn secondary" onclick="closeParty()">אחר כך</button>
   </div>
 </div>
 
@@ -350,12 +419,22 @@ const PAIRS = [
   { term: "ואהבת לרעך", def: "להתייחס לאחר כמו לעצמך" },
 ];
 
+const TOPICS = ["ויקרא י\"ט — בין אדם לחברו", "ויקרא כ\"ה — שמיטה ויובל", "במדבר ו' — ברכת כוהנים", "במדבר ט' — הענן מעל המשכן", "במדבר י\"א — תלונות העם"];
+const THEME = {"party": ["📜", "🕊️", "🌾", "📯", "⭐", "🍇", "☁️", "🔥", "🎺"], "emoji": "📯", "title": "תקעו בשופר — סיימת את כל התרגול!", "text": "עברת על כל החומר של ויקרא ובמדבר, כמו בני ישראל שהשלימו את המסע. נשאר רק המבחן המסכם!", "fanfare": [[392, 0.28, "sawtooth"], [392, 0.28, "sawtooth"], [523, 1.2, "sawtooth"]]};
+[[QUIZ, [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4]], [TF, [1, 1, 2, 3, 3, 4, 4, 0, 1, 1, 0, 3, 4, 2, 1, 4, 1, 4]], [PAIRS, [1, 1, 0, 0, 0, 0, 2, 3, 4, 4, 4, 4, 4, 0]]]
+  .forEach(([pool, topics]) => { if (pool.length !== topics.length) throw new Error('topic map length mismatch'); pool.forEach((x, i) => x.topic = topics[i]); });
+
 /* ================= STATE ================= */
-const VERSION = "גרסה 1 · עודכן 23.11.2026";
+const VERSION = "גרסה 2 · עודכן 23.11.2026";
 const store = (() => { try { return JSON.parse(localStorage.getItem("tanachGameProgress") || "{}"); } catch (e) { return {}; } })();
 store.quiz = store.quiz || {}; store.tf = store.tf || {}; store.pairs = store.pairs || {}; store.score = store.score || 0;
 function saveStore() { try { localStorage.setItem("tanachGameProgress", JSON.stringify(store)); } catch (e) {} }
-function markCovered(kind, key) { store[kind][key] = 1; saveStore(); renderCoverage(); }
+function markCovered(kind, key) {
+  const was = isAllCovered();
+  store[kind][key] = 1;
+  if (!was && isAllCovered() && !store.celebrated) { store.celebrated = true; store.pendingParty = true; }
+  saveStore(); renderCoverage();
+}
 
 let totalScore = store.score, streak = 0;
 const $ = id => document.getElementById(id);
@@ -377,11 +456,13 @@ function renderCoverage() {
   $("covTotal").textContent = done === total
     ? "🏆 כיסית את כל החומר! אלוף/ה!"
     : "סה\"כ: " + Math.round(done / total * 100) + "% מהחומר";
+  renderMenuState();
   $("versionTag").textContent = VERSION + " · " + QUIZ.length + " שאלות, " + TF.length + " נכון/לא נכון, " + PAIRS.length + " זוגות";
 }
 function resetProgress() {
   if (!confirm("לאפס את כל ההתקדמות והניקוד?")) return;
   store.quiz = {}; store.tf = {}; store.pairs = {}; store.score = 0;
+  delete store.celebrated; delete store.pendingParty; delete store.examBest;
   totalScore = 0; streak = 0;
   $("totalScore").textContent = 0; $("streak").textContent = 0;
   saveStore(); renderCoverage();
@@ -392,7 +473,7 @@ function samplePreferUncovered(pool, keyFn, covered, n) {
   return fresh.concat(seen).slice(0, n);
 }
 
-const screens = ["menu","quiz","tf","memory","result"];
+const screens = ["menu","quiz","tf","memory","result","review","exam","examres"];
 function show(name) {
   screens.forEach(s => $("screen-"+s).classList.toggle("hidden", s !== name));
   $("homeBtn").classList.toggle("hidden", name === "menu");
@@ -403,7 +484,7 @@ function setTrail(pct) {
   $("trailFill").style.width = (pct * 100) + "%";
   $("climber").style.right = (pct * 100) + "%";
 }
-function goHome() { stopTFTimer(); show("menu"); }
+function goHome() { stopTFTimer(); show("menu"); maybeCelebrate(); }
 function addScore(n) {
   totalScore += n;
   $("totalScore").textContent = totalScore;
@@ -458,6 +539,7 @@ function showResult({ correct, total, title, againFn, againLabel }) {
   btn.onclick = againFn;
   show("result");
   if (ratio >= .6) { confetti(ratio >= .9 ? 50 : 25); sndWin(); }
+  maybeCelebrate();
 }
 
 /* ================= QUIZ ================= */
@@ -605,6 +687,131 @@ function flipMem(card) {
       memLock = false;
     }, 900);
   }
+}
+
+/* ================= REVIEW ================= */
+function showReview() {
+  let html = "";
+  TOPICS.forEach((name, ti) => {
+    const items = [];
+    QUIZ.filter(x => x.topic === ti).forEach(x => items.push({ done: !!store.quiz[x.q], q: x.q, a: x.a[0] }));
+    TF.filter(x => x.topic === ti).forEach(x => items.push({ done: !!store.tf[x.q], q: x.q, a: (x.t ? "נכון" : "לא נכון") + " — " + x.fact }));
+    PAIRS.filter(x => x.topic === ti).forEach(x => items.push({ done: !!store.pairs[x.term], q: x.term, a: x.def }));
+    const done = items.filter(i => i.done).length;
+    const mark = done === items.length ? "🏆" : done > 0 ? "🟡" : "⚪";
+    html += `<details class="rv-topic"${done > 0 && done < items.length ? " open" : ""}>
+      <summary>${mark} ${name}<span class="rv-count">${done}/${items.length}</span></summary>` +
+      items.sort((a, b) => b.done - a.done).map(i => i.done
+        ? `<div class="rv-item">✅ ${i.q}<span class="rv-a">${i.a}</span></div>`
+        : `<div class="rv-item todo">⬜ ${i.q}</div>`).join("") + "</details>";
+  });
+  $("reviewBody").innerHTML = html;
+  show("review");
+}
+
+/* ================= COMPLETION PARTY ================= */
+function isAllCovered() {
+  return covCount("quiz", QUIZ, x => x.q) === QUIZ.length
+    && covCount("tf", TF, x => x.q) === TF.length
+    && covCount("pairs", PAIRS, x => x.term) === PAIRS.length;
+}
+function renderMenuState() {
+  const total = QUIZ.length + TF.length + PAIRS.length;
+  const done = covCount("quiz", QUIZ, x => x.q) + covCount("tf", TF, x => x.q) + covCount("pairs", PAIRS, x => x.term);
+  const open = done === total;
+  $("examBtn").classList.toggle("locked", !open);
+  $("examEmoji").textContent = open ? "🎓" : "🔒";
+  $("examSub").textContent = open
+    ? EXAM_LEN + " שאלות וציון בסוף" + (store.examBest != null ? " · השיא שלך: " + store.examBest : "")
+    : "נפתח כשמסיימים את כל התרגול — נשארו עוד " + (total - done);
+}
+function partyConfetti(waves = 5) {
+  for (let wave = 0; wave < waves; wave++) setTimeout(() => {
+    for (let i = 0; i < 36; i++) {
+      const el = document.createElement("div");
+      el.className = "confetti";
+      el.textContent = THEME.party[Math.floor(Math.random() * THEME.party.length)];
+      el.style.left = Math.random() * 100 + "vw";
+      el.style.fontSize = (22 + Math.random() * 22) + "px";
+      el.style.animationDuration = (3 + Math.random() * 3) + "s";
+      el.style.animationDelay = Math.random() * 0.8 + "s";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 8000);
+    }
+  }, wave * 900);
+}
+function fanfare() {
+  let at = 0;
+  THEME.fanfare.forEach(([f, d, type]) => { setTimeout(() => beep(f, d, type, .12), at * 1000); at += d * 0.9; });
+}
+function showParty() {
+  $("partyEmoji").textContent = THEME.emoji;
+  $("partyTitle").textContent = THEME.title;
+  $("partyText").textContent = THEME.text;
+  $("partyBackdrop").classList.remove("hidden");
+  $("partyOverlay").classList.remove("hidden");
+  partyConfetti(); fanfare();
+}
+function closeParty() {
+  $("partyOverlay").classList.add("hidden");
+  $("partyBackdrop").classList.add("hidden");
+  document.querySelectorAll(".confetti").forEach(el => el.remove());
+}
+function maybeCelebrate() {
+  if (!store.pendingParty) return;
+  store.pendingParty = false; saveStore();
+  setTimeout(showParty, 900);
+}
+
+/* ================= FINAL EXAM ================= */
+const EXAM_LEN = Math.min(14, QUIZ.length) + Math.min(6, TF.length);
+let exQs = [], exIdx = 0, exAnswers = [], exLock = false;
+function startExam() {
+  if (!isAllCovered()) return;
+  exQs = shuffle([
+    ...shuffle(QUIZ).slice(0, 14).map(x => ({ q: x.q, opts: shuffle(x.a), correct: x.a[0] })),
+    ...shuffle(TF).slice(0, 6).map(x => ({ q: "נכון או לא נכון? " + x.q, opts: ["נכון", "לא נכון"], correct: x.t ? "נכון" : "לא נכון" })),
+  ]);
+  exIdx = 0; exAnswers = [];
+  show("exam");
+  renderExamQ();
+}
+function renderExamQ() {
+  exLock = false;
+  const item = exQs[exIdx];
+  $("exCount").textContent = `שאלה ${exIdx + 1} מתוך ${exQs.length}`;
+  $("exBar").style.width = (exIdx / exQs.length * 100) + "%";
+  $("exQ").textContent = item.q;
+  $("exAnswers").innerHTML = "";
+  item.opts.forEach(opt => {
+    const b = document.createElement("button");
+    b.className = "ans";
+    b.textContent = opt;
+    b.onclick = () => {
+      if (exLock) return;
+      exLock = true;
+      b.style.borderColor = "#c89136";
+      beep(520, .07, "sine", .07);
+      exAnswers.push(opt);
+      setTimeout(() => { exIdx++; exIdx < exQs.length ? renderExamQ() : finishExam(); }, 220);
+    };
+    $("exAnswers").appendChild(b);
+  });
+}
+function finishExam() {
+  const wrong = exQs.map((x, i) => ({ ...x, mine: exAnswers[i] })).filter(x => x.mine !== x.correct);
+  const grade = Math.round((exQs.length - wrong.length) / exQs.length * 100);
+  store.examBest = Math.max(store.examBest || 0, grade);
+  saveStore(); renderCoverage();
+  $("exEmoji").textContent = grade >= 90 ? "🏆" : grade >= 75 ? "🎉" : grade >= 55 ? "💪" : "📚";
+  $("exGrade").textContent = grade;
+  $("exTitle").textContent = grade >= 90 ? "מצוין! מוכנים למבחן!" : grade >= 75 ? "יפה מאוד!" : grade >= 55 ? "בדרך הנכונה!" : "עוד קצת תרגול וזה שם!";
+  $("exText").textContent = `ענית נכון על ${exQs.length - wrong.length} מתוך ${exQs.length} שאלות.` +
+    (wrong.length ? " הנה מה שכדאי לחזור עליו:" : " בלי אף טעות!");
+  $("exMistakes").innerHTML = wrong.map(x =>
+    `<div class="ex-miss">${x.q}<br>ענית: <s>${x.mine}</s><br>התשובה: <b>${x.correct}</b></div>`).join("");
+  show("examres");
+  if (grade >= 85) { partyConfetti(2); fanfare(); } else if (grade >= 55) { confetti(20); }
 }
 
 $("totalScore").textContent = totalScore;
